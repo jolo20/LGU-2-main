@@ -1,0 +1,167 @@
+:root{
+  --brand:#115272;
+  --brand-dark:#115272;
+  --sidebar-w:270px;
+  --header-h:60px;
+  --footer-h:48px;
+  --radius:10px;
+  --shadow:0 8px 24px rgba(0,0,0,.08);
+  --bg:#f6f7fb;
+  --text:#111;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Montserrat, system-ui, -apple-system, Arial, Helvetica, sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  display:flex; flex-direction:column; min-height:100vh;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--brand);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand); 
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-dark);
+}
+
+/* Header */
+.header{
+  height:var(--header-h);
+  background:var(--brand);
+  color:#fff;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 12px 0 8px;
+  position:sticky; top:0; z-index:1000;
+}
+.header .title{font-weight:800; letter-spacing:.5px}
+.header .burger{
+  border:none; background:transparent; color:#fff; font-size:1.2rem;
+  display:none; /* hidden on desktop, shown on mobile */
+}
+.profile .avatar-32{
+  width:32px;height:32px;border-radius:50%;overflow:hidden; flex:0 0 32px;
+}
+.avatar-32 img{width:100%;height:100%;object-fit:cover}
+
+/* Layout wrapper */
+.wrapper{flex:1; display:flex; min-height:calc(100vh - var(--header-h) - var(--footer-h)); transition:transform .28s ease}
+
+/* Sidebar */
+.sidebar{
+  width:var(--sidebar-w);
+  background:var(--brand);
+  color:#fff;
+  display:flex; flex-direction:column;
+  box-shadow: var(--shadow);
+  z-index:900;
+}
+.sidebar-top{
+  background:var(--brand-dark);
+  padding:18px 14px;
+  border-bottom:1px solid rgba(255,255,255,.15);
+}
+.profile-pod{display:flex; align-items:center; gap:12px}
+.avatar-64{width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid #fff; flex:0 0 64px}
+.avatar-64 img{width:100%;height:100%;object-fit:cover}
+.user-name{font-weight:700}
+
+.side-nav{padding:8px 8px 16px; overflow:auto}
+.side-nav .nav-group{border-radius:8px; overflow:hidden; margin:6px 0; background:rgba(255,255,255,.04)}
+.side-nav .group-toggle{
+  width:100%; text-align:left; border:none; background:transparent; color:#fff; padding:10px 10px;
+  display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:600;
+}
+.side-nav .group-toggle:hover{background:rgba(255,255,255,.08)}
+.side-nav .group-toggle .ico{width:22px; display:inline-flex; justify-content:center}
+.side-nav .group-toggle .caret{margin-left:auto; transition:transform .2s ease}
+
+.side-nav .sublist{
+  list-style:none; margin:0; padding:0 0 6px 32px;
+  max-height:0; overflow:hidden; transition:max-height .25s ease;
+}
+.side-nav .sublist li a{
+  display:block; color:#fff; text-decoration:none; padding:8px 8px;
+  border-radius:6px; font-weight:500;
+}
+.side-nav .sublist li a:hover{background:rgba(255,255,255,.12)}
+.side-nav .sublist li a.active{background:#fff; color:var(--brand); font-weight:700}
+
+/* Open state */
+.nav-group.open .sublist{max-height:600px}
+.nav-group.open .group-toggle .caret{transform:rotate(180deg)}
+
+.sidebar-bottom{
+  margin-top:auto; height:10px; background:var(--brand);
+}
+
+/* Content */
+.content{
+  flex:1;
+  padding:20px;
+  min-width:0;
+  z-index: 1;
+}
+.cardish{
+  background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;
+}
+
+/* Backdrop */
+.backdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.5);
+  opacity:0; pointer-events:none;
+  transition:opacity .18s ease;
+  z-index: 1000;
+}
+.backdrop.show{opacity:1; pointer-events:auto}
+
+/* Footer */
+.footer{
+  height:var(--footer-h);
+  display:flex; align-items:center; justify-content:center;
+  background:var(--brand);
+  color:#fff; font-size:.95rem;
+  position:sticky; bottom:0; z-index:800;
+}
+
+
+/* Desktop ≥ 992px: sidebar always visible, burger hidden, content beside sidebar */
+@media (min-width: 992px){
+  .header .burger{display:none}
+  .sidebar{position:relative; transform:none}
+  .wrapper{transform:none}
+}
+
+/* Mobile < 992px: sidebar off-canvas with PUSH animation */
+@media (max-width: 991.98px){
+  .header .burger{display:inline-flex; align-items:center; justify-content:center}
+  .sidebar{
+    position:fixed; left:0;
+    height:calc(100vh - var(--header-h) - var(--footer-h));
+    transform:translateX(-100%); transition:transform .28s ease;
+  }
+  body.mobile-open .sidebar{transform:translateX(1)}
+  body.mobile-open .wrapper{transform:translateX(var(--sidebar-w))}
+  /*body.mobile-open .backdrop{opacity:1; pointer-events:auto}  DOESNT WORK FOR SOME REASON*/
+}
+
+.cardish h4 {
+  font-weight: 700;
+  color: var(--brand);
+}
+.display-6 {
+  font-weight: 800;
+}
