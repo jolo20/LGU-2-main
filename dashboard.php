@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/auth.php'; ?>
 <div class="cardish">
   <h1>Dashboard</h1>
   <p>Welcome to your LGU Dashboard.</p>
