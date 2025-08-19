@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -24,18 +25,18 @@
     <div class="profile dropdown">
       <button class="btn btn-light d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
         <div class="avatar-32">
-          <img src="assets/img/image.webp" alt="User">
+          <img src="assets/img/default-avatar.jpg" alt="User">
         </div>
         <i class="fa-solid fa-caret-down"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="#"><i class="fa-regular fa-user me-2"></i>Profile</a></li>
-        <li><a class="dropdown-item" href="#" data-href="settings.php"><i class="fa-solid fa-gear me-2"></i>Settings</a>
+        <li><a class="dropdown-item profile-link" href="#" data-href="profile.php"><i class="fa-regular fa-user me-2"></i>Profile</a></li>
+        <li><a class="dropdown-item settings-link" href="#" data-href="settings.php"><i class="fa-solid fa-gear me-2"></i>Settings</a>
         </li>
         <li>
           <hr class="dropdown-divider">
         </li>
-        <li><a class="dropdown-item logout-link" href="login.html"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
       </ul>
     </div>
   </header>
@@ -49,10 +50,12 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-top">
         <div class="profile-pod">
-          <div class="avatar-64">
-            <img src="assets/img/image.webp" alt="User">
+          <div class="text-center w-100">
+            <div class="avatar-64 mx-auto mb-3">
+              <img src="assets/img/default-avatar.jpg" alt="User">
+            </div>
+            <div class="user-name"><?= ucfirst($_SESSION['username'] ?? 'Guest') ?></div>
           </div>
-          <div class="user-name">Keqing</div>
         </div>
       </div>
 
@@ -179,16 +182,13 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-folder-open"></i></span>
-            Legislative Records Management
+            Records Section
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
             <li><a href="#" data-href="contents/legislative-records-management/records-cataloging.php">Records
                 Cataloging and Classification</a></li>
-            <li><a href="#" data-href="contents/legislative-records-management/search-retrieval.php">Search and
-                Retrieval</a></li>
-            <li><a href="#" data-href="contents/legislative-records-management/document-tagging.php">Document Tagging
-                (By Sponsor, Committee, Topic)</a></li>
+            <li><a href="#" data-href="contents/legislative-records-management/search-retrieval.php">Documents</a></li>
           </ul>
         </div>
 
@@ -311,6 +311,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/script.js"></script>
+  <script>
+    document.getElementById('confirmLogoutBtn').addEventListener('click', function() {
+      window.location.href = 'logout.php';
+    });
+  </script>
 </body>
 
 </html>
