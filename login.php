@@ -1,3 +1,65 @@
+<?php
+session_start();
+
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');
+define('DB_PASS', ''); 
+define('DB_NAME', 'login');
+
+if (isset($_SESSION['flash'])) {
+    $error = $_SESSION['flash'];
+    unset($_SESSION['flash']);
+} else {
+    $error = '';
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $identifier = trim($_POST['email'] ?? ''); 
+    $password = $_POST['password'] ?? '';
+
+    if ($identifier === '' || $password === '') {
+        $error = 'Please enter email/username and password.';
+    } else {
+        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+        if ($mysqli->connect_errno) {
+            $error = 'Database connection failed: ' . $mysqli->connect_error;
+        } else {
+            $sql = 'SELECT id, username, password, email FROM users WHERE email = ? OR username = ? LIMIT 1';
+            $stmt = $mysqli->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param('ss', $identifier, $identifier);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $hash = $row['password'];
+                    $verified = false;
+                    if (password_verify($password, $hash)) {
+                        $verified = true;
+                    } elseif ($password === $hash) {
+                        $verified = true;
+                    }
+
+                    if ($verified) {
+                        $_SESSION['user_id'] = $row['id'];
+                        $_SESSION['username'] = $row['username'];
+                        header('Location: index.php?src=dashboard.php');
+                        exit;
+                    } else {
+                        $error = 'Invalid credentials.';
+                    }
+                } else {
+                    $error = 'Invalid credentials.';
+                }
+                $stmt->close();
+            } else {
+                $error = 'Database query failed.';
+            }
+            $mysqli->close();
+        }
+    }
+}
+?>
+
 <!doctype html>
 <html lang="en">
 
@@ -33,23 +95,27 @@
                     <h3 id="login-title">Login</h3>
                     <p class="sub">Sign in to your account</p>
 
-                    <div class="form-field">
-                        <label class="small" for="email">Email</label>
-                        <input id="email" type="text" placeholder="Enter your email" autocomplete="username">
-                    </div>
+                    <?php if ($error): ?>
+                        <div class="error" style="color:#c0392b; margin-bottom:12px;"><?=htmlspecialchars($error)?></div>
+                    <?php endif; ?>
 
-                    <div class="form-field">
-                        <label class="small" for="password">Password</label>
-                        <input id="password" type="password" placeholder="Enter your password"
-                            autocomplete="current-password">
-                    </div>
+                    <form method="post" action="">
+                        <div class="form-field">
+                            <label class="small" for="email">Email</label>
+                            <input id="email" name="email" type="text" placeholder="Enter your email or username" autocomplete="username" value="<?=isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''?>">
+                        </div>
 
-                    <div class="controls">
-                        <label class="remember"><input type="checkbox" id="remember"> Remember me</label>
-                        <a class="forgot" href="#">Forgot Password?</a>
-                    </div>
+                        <div class="form-field">
+                            <label class="small" for="password">Password</label>
+                            <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password">
+                        </div>
 
-                    <button class="btn-login" id="btnLogin" type="button">LOGIN</button>
+                        <div class="controls">
+                            <a class="forgot" href="#">Forgot Password?</a>
+                        </div>
+
+                        <button class="btn-login" id="btnLogin" type="submit">LOGIN</button>
+                    </form>
                 </div>
             </div>
         </div>
