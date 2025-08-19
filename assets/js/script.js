@@ -19,6 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (backdrop) backdrop.addEventListener('click', closeMobile);
   window.addEventListener('resize', () => { if (!isMobile()) closeMobile(); });
 
+  
+  document.querySelector('.settings-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    const href = this.getAttribute('data-href');
+    loadLink(this);
+  });
+  document.querySelector('.profile-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    const href = this.getAttribute('data-href');
+    loadLink(this);
+  });
+
   // Expand/collapse groups + remember state
   const storageKeyGroup = 'lgu_open_groups';
   const openGroups = new Set(JSON.parse(localStorage.getItem(storageKeyGroup) || '[]'));
@@ -70,11 +82,11 @@ groups.forEach((g, idx) => {
 
 
   // AJAX load submodules
-  const links = document.querySelectorAll('.sublist a');
+  const links = document.querySelectorAll('.sublist a, .settings-link, .profile-link');
   const storageKeyActive = 'lgu_active_href';
 
   function setActive(link) {
-    document.querySelectorAll('.sublist a.active').forEach(a => a.classList.remove('active'));
+    document.querySelectorAll('.sublist a.active, .dropdown-item.active').forEach(a => a.classList.remove('active'));
     link.classList.add('active');
     const group = link.closest('.nav-group');
     if (group && !group.classList.contains('open')) group.classList.add('open');
