@@ -57,7 +57,13 @@ body{
 .avatar-32 img{width:100%;height:100%;object-fit:cover}
 
 /* Layout wrapper */
-.wrapper{flex:1; display:flex; min-height:calc(100vh - var(--header-h) - var(--footer-h)); transition:transform .28s ease}
+.wrapper{
+  flex:1; 
+  display:flex; 
+  min-height:calc(100vh - var(--header-h) - var(--footer-h)); 
+  transition:transform .28s ease;
+  margin-left: var(--sidebar-w);
+}
 
 /* Sidebar */
 .sidebar{
@@ -67,16 +73,21 @@ body{
   display:flex; flex-direction:column;
   box-shadow: var(--shadow);
   z-index:900;
+  position: fixed;
+  left: 0;
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h) - var(--footer-h));
+  overflow-y: auto;
 }
 .sidebar-top{
   background:var(--brand-dark);
   padding:18px 14px;
   border-bottom:1px solid rgba(255,255,255,.15);
 }
-.profile-pod{display:flex; align-items:center; gap:12px}
-.avatar-64{width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid #fff; flex:0 0 64px}
+.profile-pod{padding: 1rem 0}
+.avatar-64{width:64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid #fff;margin:0 auto}
 .avatar-64 img{width:100%;height:100%;object-fit:cover}
-.user-name{font-weight:700}
+.user-name{font-weight:700;text-align:center}
 
 .side-nav{padding:8px 8px 16px; overflow:auto}
 .side-nav .nav-group{border-radius:8px; overflow:hidden; margin:6px 0; background:rgba(255,255,255,.04)}
@@ -134,28 +145,31 @@ body{
   display:flex; align-items:center; justify-content:center;
   background:var(--brand);
   color:#fff; font-size:.95rem;
-  position:sticky; bottom:0; z-index:800;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:800;
 }
 
 
 /* Desktop ≥ 992px: sidebar always visible, burger hidden, content beside sidebar */
 @media (min-width: 992px){
   .header .burger{display:none}
-  .sidebar{position:relative; transform:none}
+  .sidebar{transform:none}
   .wrapper{transform:none}
 }
 
 /* Mobile < 992px: sidebar off-canvas with PUSH animation */
 @media (max-width: 991.98px){
   .header .burger{display:inline-flex; align-items:center; justify-content:center}
+  .wrapper{margin-left: 0}
   .sidebar{
-    position:fixed; left:0;
-    height:calc(100vh - var(--header-h) - var(--footer-h));
-    transform:translateX(-100%); transition:transform .28s ease;
+    transform:translateX(-100%); 
+    transition:transform .28s ease;
   }
-  body.mobile-open .sidebar{transform:translateX(1)}
+  body.mobile-open .sidebar{transform:translateX(0)}
   body.mobile-open .wrapper{transform:translateX(var(--sidebar-w))}
-  /*body.mobile-open .backdrop{opacity:1; pointer-events:auto}  DOESNT WORK FOR SOME REASON*/
 }
 
 .cardish h4 {
