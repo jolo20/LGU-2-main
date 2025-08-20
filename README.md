@@ -11,4 +11,4 @@ if you dont know how to use github. theres a tutorial on youtube on how to add g
 
 - auth.php
 - login.php(unless its necessary)
-- settings.php(unless its necessary)
+- profile.php(you can if you know how fix it)
