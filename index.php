@@ -182,7 +182,7 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-folder-open"></i></span>
-            Records Section
+            Records And Correspondence
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
