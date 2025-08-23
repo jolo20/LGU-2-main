@@ -186,9 +186,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#" data-href="contents/legislative-records-management/records-cataloging.php">Records
-                Cataloging and Classification</a></li>
-            <li><a href="#" data-href="contents/legislative-records-management/search-retrieval.php">Documents</a></li>
+            <li><a href="#" data-href="contents/records-and-correspondence/measure-docketing.php">Measure Docketing</a></li>
+            <li><a href="#" data-href="contents/records-and-correspondence/categorization-and-classification.php">Categorization and Classification</a></li>
+            <li><a href="#" data-href="contents/records-and-correspondence/document-tracking.php">Document Tracking</a></li>
           </ul>
         </div>
 

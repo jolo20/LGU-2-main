@@ -1,0 +1,42 @@
+.modal {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    
+}
+
+.modal {
+    z-index: 9999 !important;
+}
+
+.modal-backdrop {
+ display: none !important;
+}
+
+.modal-dialog {
+    margin: 0 !important;
+    position: relative !important;
+    width: 100%;
+    max-width: 500px;
+    pointer-events: all;
+}
+
+.modal-content {
+    box-shadow: 0 5px 15px rgba(0,0,0,.5);
+    border: 1px solid rgba(0,0,0,.2);
+    background-color: #fff;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Ensure proper scrolling */
+.modal-body {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+}
+
+/* Fix for any navigation bar overlap */
