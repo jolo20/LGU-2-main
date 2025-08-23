@@ -75,7 +75,7 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-gavel"></i></span>
-            Ordinance & Resolution Tracking
+            Ordinance and Resolution
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
@@ -83,12 +83,6 @@
                 Editing</a></li>
             <li><a href="#" data-href="contents/ordinance-resolution-tracking/sponsorship-management.php">Sponsorship &
                 Author Management</a></li>
-            <li><a href="#" data-href="contents/ordinance-resolution-tracking/status-tracking.php">Status Tracking
-                (Draft → 1st Reading → Approved)</a></li>
-            <li><a href="#" data-href="contents/ordinance-resolution-tracking/version-control.php">Document Version
-                Control</a></li>
-            <li><a href="#" data-href="contents/ordinance-resolution-tracking/notifications.php">Notification and
-                Reminders</a></li>
           </ul>
         </div>
 
@@ -96,19 +90,13 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-handshake-angle"></i></span>
-            Session & Meeting Management
+            Minutes Section
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
             <li><a href="#" data-href="contents/session-meeting-management/session-scheduling.php">Session Scheduling
                 and Notifications</a></li>
             <li><a href="#" data-href="contents/session-meeting-management/agenda-builder.php">Agenda Builder</a></li>
-            <li><a href="#" data-href="contents/session-meeting-management/attendance-monitoring.php">Attendance
-                Monitoring</a></li>
-            <li><a href="#" data-href="contents/session-meeting-management/minutes-approval.php">Minutes Encoding and
-                Approval</a></li>
-            <li><a href="#" data-href="contents/session-meeting-management/rollcall-management.php">Roll Call
-                Management</a></li>
           </ul>
         </div>
 
@@ -116,7 +104,7 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-calendar-days"></i></span>
-            Legislative Agenda & Calendar
+            Agenda and Briefing
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
@@ -126,9 +114,6 @@
             <li><a href="#"
                 data-href="contents/legislative-agenda-calendar/placeholder.php?t=Priority%20Legislative%20List">Priority
                 Legislative List</a></li>
-            <li><a href="#"
-                data-href="contents/legislative-agenda-calendar/placeholder.php?t=Deadlines%20and%20Reminders">Deadlines
-                and Reminders</a></li>
           </ul>
         </div>
 
@@ -146,12 +131,6 @@
             <li><a href="#"
                 data-href="contents/committee-management-system/placeholder.php?t=Assignment%20of%20Legislative%20Items">Assignment
                 of Legislative Items</a></li>
-            <li><a href="#"
-                data-href="contents/committee-management-system/placeholder.php?t=Committee%20Meeting%20Schedule">Committee
-                Meeting Schedule</a></li>
-            <li><a href="#"
-                data-href="contents/committee-management-system/placeholder.php?t=Committee%20Reports%20Management">Committee
-                Reports Management</a></li>
           </ul>
         </div>
 
@@ -159,7 +138,7 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-check-to-slot"></i></span>
-            Voting & Decision-Making System
+            Committee Journal
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
@@ -169,12 +148,6 @@
             <li><a href="#"
                 data-href="contents/voting-decision-making-system/placeholder.php?t=Motion%20Creation%20%26%20Seconding">Motion
                 Creation & Seconding</a></li>
-            <li><a href="#"
-                data-href="contents/voting-decision-making-system/placeholder.php?t=Voting%20Result%20Recording">Voting
-                Result Recording</a></li>
-            <li><a href="#"
-                data-href="contents/voting-decision-making-system/placeholder.php?t=Real-Time%20Result%20Display">Real-Time
-                Result Display</a></li>
           </ul>
         </div>
 
@@ -196,7 +169,7 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-microphone-lines"></i></span>
-            Public Hearing Management
+            Committee Hearing
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
@@ -205,12 +178,6 @@
             <li><a href="#"
                 data-href="contents/public-hearing-management/placeholder.php?t=Speaker/Participant%20Registration">Speaker/Participant
                 Registration</a></li>
-            <li><a href="#"
-                data-href="contents/public-hearing-management/placeholder.php?t=Testimony%20Recording">Testimony
-                Recording</a></li>
-            <li><a href="#"
-                data-href="contents/public-hearing-management/placeholder.php?t=Summary%20and%20Feedback%20Logging">Summary
-                and Feedback Logging</a></li>
           </ul>
         </div>
 
@@ -218,19 +185,13 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-box-archive"></i></span>
-            Legislative Archives
+            Archive Section
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
             <li><a href="#"
                 data-href="contents/legislative-archives/placeholder.php?t=Enacted%20Ordinances%20Archive">Enacted
                 Ordinances Archive</a></li>
-            <li><a href="#"
-                data-href="contents/legislative-archives/placeholder.php?t=Session%20Journal%20Archive">Session Journal
-                Archive</a></li>
-            <li><a href="#"
-                data-href="contents/legislative-archives/placeholder.php?t=Historical%20Legislation%20Repository">Historical
-                Legislation Repository</a></li>
           </ul>
         </div>
 
@@ -238,7 +199,7 @@
         <div class="nav-group">
           <button class="group-toggle">
             <span class="ico"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
-            Legislative Research & Analysis
+            Research Section
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
@@ -248,9 +209,6 @@
             <li><a href="#"
                 data-href="contents/legislative-research-analysis/placeholder.php?t=Keyword%20%26%20Topic%20Search">Keyword
                 & Topic Search</a></li>
-            <li><a href="#"
-                data-href="contents/legislative-research-analysis/placeholder.php?t=Law%20Comparison%20Tool">Law
-                Comparison Tool</a></li>
           </ul>
         </div>
 
