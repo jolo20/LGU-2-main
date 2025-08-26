@@ -93,45 +93,73 @@ groups.forEach((g, idx) => {
   }
 
   async function loadLink(link, pushState = true) {
-    const href = link.getAttribute('data-href');
-    if (!href) return;
+  const href = link.getAttribute('data-href');
+  if (!href) return;
 
-    setActive(link);
+  setActive(link);
 
+  content.innerHTML = `
+    <div class="cardish">
+      <div class="d-flex align-items-center gap-2">
+        <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
+        <strong>Loading ${link.textContent.trim()}...</strong>
+      </div>
+    </div>
+  `;
+
+  try {
+    const resp = await fetch(href, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const html = await resp.text();
+    content.innerHTML = html;
+    localStorage.setItem(storageKeyActive, href);
+
+    // ✅ Re-bind pagination links
+    content.querySelectorAll(".pagination a").forEach(pagiLink => {
+      pagiLink.addEventListener("click", e => {
+        e.preventDefault();
+        const url = pagiLink.getAttribute("href");
+        if (url) {
+          fetch(url)
+            .then(r => r.text())
+            .then(innerHtml => {
+              content.innerHTML = innerHtml;
+
+              // rebind pagination again after new load
+              content.querySelectorAll(".pagination a").forEach(innerLink => {
+                innerLink.addEventListener("click", e2 => {
+                  e2.preventDefault();
+                  fetch(innerLink.href)
+                    .then(r => r.text())
+                    .then(html => {
+                      content.innerHTML = html;
+                      window.history.pushState({}, "", innerLink.href);
+                    });
+                });
+              });
+            });
+          window.history.pushState({}, "", url);
+        }
+      });
+    });
+
+    // Update URL
+    if (pushState) {
+      const u = new URL(window.location.href);
+      u.searchParams.set('src', href);
+      history.pushState({ src: href }, '', u.toString());
+    }
+
+  } catch (e) {
     content.innerHTML = `
       <div class="cardish">
-        <div class="d-flex align-items-center gap-2">
-          <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
-          <strong>Loading ${link.textContent.trim()}...</strong>
-        </div>
+        <h3 class="mb-2">Failed to load</h3>
+        <p class="text-muted">Could not load: <code>${href}</code> (${e.message}).</p>
       </div>
     `;
-
-    try {
-      const resp = await fetch(href, { cache: 'no-store' });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const html = await resp.text();
-      content.innerHTML = html;
-      localStorage.setItem(storageKeyActive, href);
-
-      // Update URL
-      if (pushState) {
-        const u = new URL(window.location.href);
-        u.searchParams.set('src', href);
-        history.pushState({ src: href }, '', u.toString());
-      }
-
-
-    } catch (e) {
-      content.innerHTML = `
-        <div class="cardish">
-          <h3 class="mb-2">Failed to load</h3>
-          <p class="text-muted">Could not load: <code>${href}</code> (${e.message}).</p>
-        </div>
-      `;
-      console.error(e);
-    }
+    console.error(e);
   }
+}
 
   links.forEach(a => {
     a.addEventListener('click', (e) => {
@@ -157,20 +185,47 @@ groups.forEach((g, idx) => {
     const found = Array.from(links).find(a => a.getAttribute('data-href') === src);
     if (found) loadLink(found, false);
   });
+
+  // Handle search form submission
+  document.addEventListener('submit', function(e) {
+    if (e.target && e.target.id === 'searchForm') {
+      e.preventDefault();
+      const searchValue = document.getElementById('searchInput').value.toLowerCase();
+      
+      // Get all document rows
+      const rows = document.querySelectorAll('tbody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchValue)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  });
+
+  // Handle search input for real-time filtering
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'searchInput') {
+      const searchValue = e.target.value.toLowerCase();
+      
+      // Get all document rows
+      const rows = document.querySelectorAll('tbody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchValue)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  });
 });
-document.querySelectorAll('[data-href]').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        let url = this.getAttribute('data-href');
-        // Load into main content area
-        document.getElementById('main-content').innerHTML = '<div>Loading...</div>';
-        fetch(url)
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('main-content').innerHTML = html;
-            });
-    });
-});
+// Event handlers for data-href elements are now handled in the DOMContentLoaded section above
 
 const param = new URLSearchParams(window.location.search).get('src');
 const last = param || localStorage.getItem(storageKeyActive) || 'dashboard.php';

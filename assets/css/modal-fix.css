@@ -14,15 +14,19 @@
 }
 
 .modal-backdrop {
- display: none !important;
+ display: none  !important;
 }
 
 .modal-dialog {
     margin: 0 !important;
     position: relative !important;
     width: 100%;
-    max-width: 500px;
+    max-width: 90% !important;
     pointer-events: all;
+}
+
+.modal-dialog.modal-xl {
+    max-width: 1200px !important;
 }
 
 .modal-content {
@@ -33,10 +37,8 @@
     overflow-y: auto;
 }
 
-/* Ensure proper scrolling */
+
 .modal-body {
     max-height: calc(90vh - 120px);
     overflow-y: auto;
 }
-
-/* Fix for any navigation bar overlap */
