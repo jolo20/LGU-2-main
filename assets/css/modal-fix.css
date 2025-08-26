@@ -2,14 +2,14 @@
     background: rgba(0, 0, 0, 0.1) !important;
 }
 
-.modal.show {
+.modal1.show {
     display: flex !important;
     align-items: center;
     justify-content: center;
     
 }
 
-.modal {
+.modal1 {
     z-index: 9999 !important;
 }
 
@@ -17,15 +17,15 @@
  display: none  !important;
 }
 
-.modal-dialog {
+.modal1-dialog {
     margin: 0 !important;
     position: relative !important;
-    width: 100%;
-    max-width: 90% !important;
+    width: 50%;
+    max-width: 30% !important;
     pointer-events: all;
 }
 
-.modal-dialog.modal-xl {
+.modal1-dialog.modal-xl {
     max-width: 1200px !important;
 }
 
