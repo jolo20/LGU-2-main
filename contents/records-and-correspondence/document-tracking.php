@@ -1,4 +1,8 @@
 <?php
+require_once '../../auth.php';
+$pageTitle = "Document Tracking";
+require_once '../../includes/header.php';
+
 $conn = new mysqli("localhost", "root", "", "lgu2");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
@@ -63,14 +67,14 @@ $conn->close();
 
     <div class="row">
         <div class="col-12 mb-3">
-            <form class="d-flex" method="GET">
-                <div class="input-group">
-                    <input type="text" class="form-control" name="search" 
-                           placeholder="Search by document code, title, or remarks..." 
-                           value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
-                    <button class="btn btn-primary" type="submit">Search</button>
-                </div>
-            </form>
+            <form class="d-flex" method="GET" action="/LGU-2-MAIN/index.php">
+  <div class="input-group">
+    <input type="hidden" name="src" value="<?= htmlspecialchars($_GET['src'] ?? 'contents/records-and-correspondence/document-tracking.php') ?>">
+    <input type="text" class="form-control" name="search" placeholder="Search records..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+    <button class="btn btn-primary" type="submit">Search</button>
+  </div>
+</form>
+
         </div>
     </div>
 
@@ -147,3 +151,4 @@ $conn->close();
         </div>
     <?php endforeach; ?>
 </div>
+<?php require_once '../../includes/footer.php' ?>

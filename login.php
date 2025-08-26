@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($verified) {
                         $_SESSION['user_id'] = $row['id'];
                         $_SESSION['username'] = $row['username'];
-                        header('Location: index.php?src=dashboard.php');
+                        header('Location: dashboard.php');
                         exit;
                     } else {
                         $error = 'Invalid credentials.';

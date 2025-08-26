@@ -1,3 +1,6 @@
+<?php require_once '../../auth.php';
+$pageTitle = "draft creation";
+require_once '../../includes/header.php';?>
 <div class="cardish">
   <h3 class="mb-3">Draft Creation & Editing</h3>
   <div class="table-responsive">
@@ -14,3 +17,4 @@
     </table>
   </div>
 </div>
+<?php require_once '../../includes/footer.php' ?>

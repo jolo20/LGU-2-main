@@ -1,4 +1,7 @@
 <?php
+require_once '../../auth.php';
+$pageTitle = "Measure Docketing";
+require_once '../../includes/header.php';
 
 $host = "localhost";
 $user = "root";
@@ -111,7 +114,7 @@ if ($row['count'] == 0) {
 
 // Pagination setup
 $page = max(1, isset($_GET['page']) ? (int)$_GET['page'] : 1);
-$limit = 5;
+$limit = 2;
 $offset = ($page - 1) * $limit;
 
 // Clean up the current URL parameters
@@ -138,17 +141,31 @@ $sql = "SELECT m.m6_MD_ID, m.m6_MD_Code, m.measure_title, m.measure_content,
 $result = $conn->query($sql);
 ?>
 
+<!-- Start content wrapper -->
 <div class="cardish">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Docketing Records</h2>
-        <form class="d-flex" method="GET">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <div class="ico">
+            <i class="fa-solid fa-gavel fa-xl"></i>
+        </div>
+        <h1 class="mb-0">Measure Docketing</h1>
+    </div>
+
+    <!-- Search Form -->
+    <div class="mb-4">
+        <form method="GET" class="search-form" id="searchForm">
             <div class="input-group">
-                <input type="text" class="form-control" name="search" placeholder="Search records..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
-                <button class="btn btn-primary" type="submit">Search</button>
+                <input type="text" 
+                       class="form-control" 
+                       placeholder="Search measures..." 
+                       name="search" 
+                       value="<?= htmlspecialchars($searchTerm) ?>">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fa-solid fa-search me-2"></i>Search
+                </button>
             </div>
         </form>
     </div>
-
+  
     <table class="table table-bordered table-striped table-hover align-middle">
         <thead class="table-dark">
             <tr>
@@ -371,54 +388,11 @@ $result = $conn->query($sql);
         </nav>
     </div>
     <?php endif; ?>
-    <div class="card-footer">
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center mb-0">
-                <?php if($page > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?<?= http_build_query(array_merge($params, ['page' => $page - 1])) ?>">
-                            Previous
-                        </a>
-                    </li>
-                <?php endif; ?>
-                
-                <?php
-                $startPage = max(1, $page - 2);
-                $endPage = min($totalPages, $page + 2);
-                
-                if ($startPage > 1) {
-                    echo '<li class="page-item"><a class="page-link" href="?'.http_build_query(array_merge($params, ['page' => 1])).'">1</a></li>';
-                    if ($startPage > 2) {
-                        echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                    }
-                }
-                
-                for ($i = $startPage; $i <= $endPage; $i++) {
-                    $url = '?' . http_build_query(array_merge($params, ['page' => $i]));
-                    echo '<li class="page-item '.($i == $page ? 'active' : '').'">';
-                    echo '<a class="page-link" href="'.$url.'">'.$i.'</a>';
-                    echo '</li>';
-                }
-                
-                if ($endPage < $totalPages) {
-                    if ($endPage < $totalPages - 1) {
-                        echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                    }
-                    echo '<li class="page-item"><a class="page-link" href="?'.http_build_query(array_merge($params, ['page' => $totalPages])).'">'.$totalPages.'</a></li>';
-                }
-                ?>
-                
-                <?php if($page < $totalPages): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?<?= http_build_query(array_merge($params, ['page' => $page + 1])) ?>">
-                            Next
-                        </a>
-                    </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
+    
         <div class="text-center mt-2 text-muted small">
             Showing <?= ($offset + 1) ?>-<?= min($offset + $limit, $total) ?> of <?= $total ?> documents
         </div>
     </div>
 </div>
+
+<?php require_once '../../includes/footer.php'; ?>

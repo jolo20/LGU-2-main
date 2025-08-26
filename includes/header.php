@@ -1,18 +1,20 @@
-<?php require_once __DIR__ . '/auth.php'; 
-?>
+<?php require_once __DIR__ . '/../auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Local Government Unit 2</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/style.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/modal-fix.css">
+  <?php 
+  // Calculate relative path to root
+  $root = str_repeat('../', substr_count(trim($_SERVER['PHP_SELF'], '/'), '/') - 1);
+  ?>
+  <link href="<?= $root ?>assets/css/style.css" rel="stylesheet">
+  <link href="<?= $root ?>assets/css/modal-fix.css" rel="stylesheet">
+  <title><?= $pageTitle ?? 'Local Government Unit 2' ?></title>
 </head>
 
 <body>
@@ -27,17 +29,14 @@
     <div class="profile dropdown">
       <button class="btn btn-light d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
         <div class="avatar-32">
-          <img src="assets/img/default-avatar.jpg" alt="User">
+          <img src="<?= $root ?>assets/img/default-avatar.jpg" alt="User">
         </div>
         <i class="fa-solid fa-caret-down"></i>
       </button>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item profile-link" href="#" data-href="profile.php"><i class="fa-regular fa-user me-2"></i>Profile</a></li>
-        <li><a class="dropdown-item settings-link" href="#" data-href="settings.php"><i class="fa-solid fa-gear me-2"></i>Settings</a>
-        </li>
-        <li>
-          <hr class="dropdown-divider">
-        </li>
+        <li><a class="dropdown-item profile-link nav-link" href="<?= $root ?>profile.php"><i class="fa-regular fa-user me-2"></i>Profile</a></li>
+        <li><a class="dropdown-item settings-link nav-link" href="<?= $root ?>settings.php"><i class="fa-solid fa-gear me-2"></i>Settings</a></li>
+        <li><hr class="dropdown-divider"></li>
         <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
       </ul>
     </div>
@@ -54,7 +53,7 @@
         <div class="profile-pod">
           <div class="text-center w-100">
             <div class="avatar-64 mx-auto mb-3">
-              <img src="assets/img/default-avatar.jpg" alt="User">
+              <img src="<?= $root ?>assets/img/default-avatar.jpg" alt="User">
             </div>
             <div class="user-name"><?= ucfirst($_SESSION['username'] ?? 'Guest') ?></div>
           </div>
@@ -62,7 +61,6 @@
       </div>
 
       <nav class="side-nav" id="sideNav">
-
         <!-- Dashboard  -->
         <div class="nav-group open">
           <button class="group-toggle">
@@ -70,9 +68,10 @@
             Dashboard
           </button>
           <ul class="sublist">
-            <li><a href="#" data-href="dashboard.php" class="active">Overview</a></li>
+            <li><a href="<?= $root ?>dashboard.php" class="nav-link">Overview</a></li>
           </ul>
         </div>
+
         <!-- 1 Ordinance & Resolution Tracking -->
         <div class="nav-group">
           <button class="group-toggle">
@@ -81,9 +80,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#" data-href="contents/ordinance-resolution-tracking/draft-creation.php">Draft Creation &
+            <li><a href="<?= $root ?>contents/ordinance-resolution-tracking/draft-creation.php" class="nav-link">Draft Creation &
                 Editing</a></li>
-            <li><a href="#" data-href="contents/ordinance-resolution-tracking/sponsorship-management.php">Sponsorship &
+            <li><a href="<?= $root ?>contents/ordinance-resolution-tracking/sponsorship-management.php" class="nav-link">Sponsorship &
                 Author Management</a></li>
           </ul>
         </div>
@@ -96,9 +95,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#" data-href="contents/session-meeting-management/session-scheduling.php">Session Scheduling
+            <li><a href="<?= $root ?>contents/session-meeting-management/session-scheduling.php" class="nav-link">Session Scheduling
                 and Notifications</a></li>
-            <li><a href="#" data-href="contents/session-meeting-management/agenda-builder.php">Agenda Builder</a></li>
+            <li><a href="contents/session-meeting-management/agenda-builder.php" class="nav-link">Agenda Builder</a></li>
           </ul>
         </div>
 
@@ -110,12 +109,10 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#"
-                data-href="contents/legislative-agenda-calendar/placeholder.php?t=Event%20Calendar%20(Sessions,%20Hearings,%20Consultations)">Event
-                Calendar (Sessions, Hearings, Consultations)</a></li>
-            <li><a href="#"
-                data-href="contents/legislative-agenda-calendar/placeholder.php?t=Priority%20Legislative%20List">Priority
-                Legislative List</a></li>
+            <li><a href="<?= $root ?>contents/legislative-agenda-calendar/placeholder.php?t=Event%20Calendar%20(Sessions,%20Hearings,%20Consultations)"
+                class="nav-link">Event Calendar (Sessions, Hearings, Consultations)</a></li>
+            <li><a href="<?= $root ?>contents/legislative-agenda-calendar/placeholder.php?t=Priority%20Legislative%20List"
+                class="nav-link">Priority Legislative List</a></li>
           </ul>
         </div>
 
@@ -127,12 +124,10 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#"
-                data-href="contents/committee-management-system/placeholder.php?t=Committee%20Creation%20%26%20Membership">Committee
-                Creation & Membership</a></li>
-            <li><a href="#"
-                data-href="contents/committee-management-system/placeholder.php?t=Assignment%20of%20Legislative%20Items">Assignment
-                of Legislative Items</a></li>
+            <li><a href="<?= $root ?>contents/committee-management-system/placeholder.php?t=Committee%20Creation%20%26%20Membership"
+                class="nav-link">Committee Creation & Membership</a></li>
+            <li><a href="contents/committee-management-system/placeholder.php?t=Assignment%20of%20Legislative%20Items"
+                class="nav-link">Assignment of Legislative Items</a></li>
           </ul>
         </div>
 
@@ -144,12 +139,10 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#"
-                data-href="contents/voting-decision-making-system/placeholder.php?t=Roll%20Call%20Management">Roll Call
-                Management</a></li>
-            <li><a href="#"
-                data-href="contents/voting-decision-making-system/placeholder.php?t=Motion%20Creation%20%26%20Seconding">Motion
-                Creation & Seconding</a></li>
+            <li><a href="contents/voting-decision-making-system/placeholder.php?t=Roll%20Call%20Management"
+                class="nav-link">Roll Call Management</a></li>
+            <li><a href="contents/voting-decision-making-system/placeholder.php?t=Motion%20Creation%20%26%20Seconding"
+                class="nav-link">Motion Creation & Seconding</a></li>
           </ul>
         </div>
 
@@ -161,9 +154,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#" data-href="contents/records-and-correspondence/measure-docketing.php">Measure Docketing</a></li>
-            <li><a href="#" data-href="contents/records-and-correspondence/categorization-and-classification.php">Categorization and Classification</a></li>
-            <li><a href="#" data-href="contents/records-and-correspondence/document-tracking.php">Document Tracking</a></li>
+            <li><a href="<?= $root ?>contents/records-and-correspondence/measure-docketing.php" class="nav-link">Measure Docketing</a></li>
+            <li><a href="<?= $root ?>contents/records-and-correspondence/categorization-and-classification.php" class="nav-link">Categorization and Classification</a></li>
+            <li><a href="<?= $root ?>contents/records-and-correspondence/document-tracking.php" class="nav-link">Document Tracking</a></li>
           </ul>
         </div>
 
@@ -175,10 +168,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#" data-href="contents/public-hearing-management/placeholder.php?t=Hearing%20Schedule">Hearing
+            <li><a href="<?= $root ?>contents/public-hearing-management/placeholder.php?t=Hearing%20Schedule" class="nav-link">Hearing
                 Schedule</a></li>
-            <li><a href="#"
-                data-href="contents/public-hearing-management/placeholder.php?t=Speaker/Participant%20Registration">Speaker/Participant
+            <li><a href="contents/public-hearing-management/placeholder.php?t=Speaker/Participant%20Registration" class="nav-link">Speaker/Participant
                 Registration</a></li>
           </ul>
         </div>
@@ -191,9 +183,8 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#"
-                data-href="contents/legislative-archives/placeholder.php?t=Enacted%20Ordinances%20Archive">Enacted
-                Ordinances Archive</a></li>
+            <li><a href="<?= $root ?>contents/legislative-archives/placeholder.php?t=Enacted%20Ordinances%20Archive"
+                class="nav-link">Enacted Ordinances Archive</a></li>
           </ul>
         </div>
 
@@ -205,11 +196,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#"
-                data-href="contents/legislative-research-analysis/placeholder.php?t=Legislative%20Trends%20Dashboard">Legislative
+            <li><a href="<?= $root ?>contents/legislative-research-analysis/placeholder.php?t=Legislative%20Trends%20Dashboard" class="nav-link">Legislative
                 Trends Dashboard</a></li>
-            <li><a href="#"
-                data-href="contents/legislative-research-analysis/placeholder.php?t=Keyword%20%26%20Topic%20Search">Keyword
+            <li><a href="contents/legislative-research-analysis/placeholder.php?t=Keyword%20%26%20Topic%20Search" class="nav-link">Keyword
                 & Topic Search</a></li>
           </ul>
         </div>
@@ -222,14 +211,12 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="#"
-                data-href="contents/public-consultation-management/placeholder.php?t=Public%20Feedback%20Portal">Public
-                Feedback Portal</a></li>
-            <li><a href="#"
-                data-href="contents/public-consultation-management/placeholder.php?t=Survey%20Builder">Survey
-                Builder</a></li>
-            <li><a href="#" data-href="contents/public-consultation-management/placeholder.php?t=Issue%20Mapping">Issue
-                Mapping</a></li>
+            <li><a href="<?= $root ?>contents/public-consultation-management/placeholder.php?t=Public%20Feedback%20Portal"
+                class="nav-link">Public Feedback Portal</a></li>
+            <li><a href="<?= $root ?>contents/public-consultation-management/placeholder.php?t=Survey%20Builder"
+                class="nav-link">Survey Builder</a></li>
+            <li><a href="<?= $root ?>contents/public-consultation-management/placeholder.php?t=Issue%20Mapping"
+                class="nav-link">Issue Mapping</a></li>
           </ul>
         </div>
       </nav>
@@ -239,43 +226,3 @@
 
     <!-- Content -->
     <main class="content" id="content">
-      <div class="cardish">
-        <h1>Welcome</h1>
-        <p>Select any submodule from the sidebar to load its content here.</p>
-      </div>
-    </main>
-  </div>
-
-  <!-- Logout Confirmation Modal -->
-  <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header border-0">
-          <h5 class="modal-title" id="logoutConfirmLabel">Confirm logout</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body">
-          <p class="mb-0">Are you sure you want to log out?</p>
-        </div>
-
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" id="confirmLogoutBtn" class="btn btn-danger btn-sm">Logout</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Footer -->
-  <footer class="footer">© <span id="year"></span>&nbsp;Local Government Unit 2 — All rights reserved</footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/script.js"></script>
-  <script>
-    document.getElementById('confirmLogoutBtn').addEventListener('click', function() {
-      window.location.href = 'logout.php';
-    });
-  </script>
-</body>
-
-</html>

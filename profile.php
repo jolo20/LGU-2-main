@@ -1,6 +1,7 @@
-<?php require_once __DIR__ . '/auth.php'; ?>
-<?php
-require_once __DIR__ . '/auth.php';
+<?php require_once __DIR__ . '/auth.php';
+$pageTitle = "Profile Settings";
+      require_once __DIR__ . '/includes/header.php';
+
 
 // Database connection
 define('DB_HOST', 'localhost');
@@ -208,3 +209,4 @@ if ($mysqli->connect_errno) {
         }
     });
 </script>
+<?php require_once __DIR__ . '/includes/footer.php' ?>

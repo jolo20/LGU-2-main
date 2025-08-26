@@ -1,3 +1,9 @@
+<?php 
+require_once '../../auth.php';
+$pageTitle = "Categorization & Classification";
+require_once '../../includes/header.php'; 
+
+?>
 <div class="cardish">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Categorization & Classification</h2>
@@ -150,3 +156,4 @@
 <script>
 
 </script>
+<?php require_once '../../includes/footer.php'; ?>
