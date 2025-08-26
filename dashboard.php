@@ -1,4 +1,7 @@
-<?php require_once __DIR__ . '/auth.php'; ?>
+<?php require_once __DIR__ . '/auth.php'; 
+      require_once __DIR__ . '/includes/header.php';
+$pageTitle = "Dashboard";
+?>
 <div class="cardish">
   <h1>Dashboard</h1>
   <p>Welcome to your LGU Dashboard.</p>
@@ -33,3 +36,5 @@
     <li>Committee meeting set for Aug 20, 2025</li>
   </ul>
 </div>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
