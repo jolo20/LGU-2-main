@@ -196,9 +196,9 @@
             <i class="fa-solid fa-chevron-down caret"></i>
           </button>
           <ul class="sublist">
-            <li><a href="<?= $root ?>contents/legislative-research-analysis/placeholder.php?t=Legislative%20Trends%20Dashboard" class="nav-link">Legislative
+            <li><a href="<?= $root ?>" class="nav-link">Legislative
                 Trends Dashboard</a></li>
-            <li><a href="contents/legislative-research-analysis/placeholder.php?t=Keyword%20%26%20Topic%20Search" class="nav-link">Keyword
+            <li><a href="<?= $root ?>contents/legislative-research-section/KeywordandTopicSearch.php"class="nav-link">Keyword
                 & Topic Search</a></li>
           </ul>
         </div>
