@@ -8,6 +8,23 @@
   --shadow:0 8px 24px rgba(0,0,0,.08);
   --bg:#f6f7fb;
   --text:#111;
+
+/* Styles for non-collapsible dashboard link */
+.nav-group .group-toggle.no-caret {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.nav-group .group-toggle.no-caret:hover {
+  background: rgba(0,0,0,.05);
+}
 }
 
 *{box-sizing:border-box}

@@ -61,15 +61,12 @@
       </div>
 
       <nav class="side-nav" id="sideNav">
-        <!-- Dashboard  -->
-        <div class="nav-group open">
-          <button class="group-toggle">
+        <!-- Dashboard - Single link, no collapse -->
+        <div class="nav-group">
+          <a href="<?= $root ?>dashboard.php" class="group-toggle no-caret" style="text-decoration: none;">
             <span class="ico"><i class="fa-solid fa-gauge"></i></span>
             Dashboard
-          </button>
-          <ul class="sublist">
-            <li><a href="<?= $root ?>dashboard.php" class="nav-link">Overview</a></li>
-          </ul>
+          </a>
         </div>
 
         <!-- 1 Ordinance & Resolution Tracking -->
