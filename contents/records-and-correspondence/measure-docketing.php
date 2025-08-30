@@ -79,7 +79,8 @@ $result = $conn->query($sql);
         </form>
     </div>
     <div class="card mb-3">
-        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
+        <div class="card-header text-white d-flex justify-content-between align-items-center"
+            style="background:var(--brand)">
             Documents
         </div>
         <div class="card-body p-0">
@@ -242,12 +243,10 @@ $result = $conn->query($sql);
                                                                 class="form-label">Document Type</label>
                                                             <input type="text" class="form-control"
                                                                 id="doc_type_<?= $row['m6_MD_ID'] ?>" name="doc_type"
-                                                                value="<?= ucfirst($row[" measure_type"]) ?>" readonly>
+                                                                value="<?= ucfirst($row['measure_type']) ?>" readonly>
                                                             <!-- Hidden input to pass the real value -->
                                                             <input type="hidden" name="doc_type"
-                                                                value="<?= strtolower($row[" measure_type"]) ?>">
-
-                                                            </select>
+                                                                value="<?= strtolower($row['measure_type']) ?>">
                                                         </div>
                                                         <!-- Ordinance Categories -->
                                                         <div class="mb-3" id="categoryDiv_<?= $row['m6_MD_ID'] ?>"
@@ -257,42 +256,47 @@ $result = $conn->query($sql);
                                                             <select class="form-select"
                                                                 id="category_<?= $row['m6_MD_ID'] ?>" name="category">
                                                                 <option value="">Select Category</option>
-                                                                <option value="health">Health & Welfare</option>
+                                                                <option value="general welfare">General Welfare</option>
+                                                                <option value="administrative">Administrative</option>
+                                                                <option value="health and sanitation">Health and
+                                                                    Sanitation</option>
                                                                 <option value="education">Education</option>
-                                                                <option value="infrastructure">Infrastructure &
-                                                                    Development</option>
-                                                                <option value="environment">Environment</option>
-                                                                <option value="safety">Public Safety</option>
-                                                                <option value="traffic">Transportation & Traffic
-                                                                </option>
-                                                                <option value="recognition">Recognition & Commendation
-                                                                </option>
-                                                                <option value="budget">Budget & Finance</option>
-                                                                <option value="barangay">Barangay Affairs</option>
-                                                                <option value="franchise">Franchise & Permits</option>
+                                                                <option value="culture">Culture</option>
+                                                                <option value="sports">Sports</option>
+                                                                <option value="taxation">Taxation</option>
+                                                                <option value="revenue & appropriations">Revenue &
+                                                                    Appropriations</option>
+                                                                <option value="peace and order">Peace and Order</option>
+                                                                <option value="public safety">Public Safety</option>
+                                                                <option value="infrastructure">Infrastructure and Public
+                                                                    Works</option>
+                                                                <option value="recognition">Environment and Natural
+                                                                    Resources</option>
+                                                                <option value="social services & welfare">Social
+                                                                    Services & Welfare</option>
                                                             </select>
                                                         </div>
                                                         <!-- Resolution Subjects -->
                                                         <div class="mb-3" id="subjectDiv_<?= $row['m6_MD_ID'] ?>"
                                                             style="display: none;">
                                                             <label for="subject_<?= $row['m6_MD_ID'] ?>"
-                                                                class="form-label">Subject</label>
+                                                                class="form-label">Category</label>
                                                             <select class="form-select"
                                                                 id="subject_<?= $row['m6_MD_ID'] ?>" name="subjects">
                                                                 <option value="">Select Subject</option>
-                                                                <option value="health">Health & Welfare</option>
-                                                                <option value="education">Education</option>
-                                                                <option value="infrastructure">Infrastructure &
-                                                                    Development</option>
-                                                                <option value="environment">Environment</option>
-                                                                <option value="safety">Public Safety</option>
-                                                                <option value="traffic">Transportation & Traffic
+                                                                <option value="commendatory">Commendatory</option>
+                                                                <option value="congratulatory">Congratulatory</option>
+                                                                <option value="authorizing">Authorizing</option>
+                                                                <option value="approving">Approving</option>
+                                                                <option value="expressing Support">Expressing Support
                                                                 </option>
-                                                                <option value="recognition">Recognition & Commendation
-                                                                </option>
-                                                                <option value="budget">Budget & Finance</option>
-                                                                <option value="barangay">Barangay Affairs</option>
-                                                                <option value="franchise">Franchise & Permits</option>
+                                                                <option value="position">Position</option>
+                                                                <option value="request">Request</option>
+                                                                <option value="appeal">Appeal</option>
+                                                                <option value="condolence">Condolence</option>
+                                                                <option value="sympathy">Sympathy</option>
+                                                                <option value="administrative">Administrative</option>
+                                                                <option value="organizational">Organizational</option>
                                                             </select>
                                                         </div>
                                                         <script>
@@ -305,7 +309,6 @@ $result = $conn->query($sql);
                                                                     const subjectSelect = document.getElementById('subject_' + id);
                                                                     if (!docType) return;
 
-                                                                    // Convert to lowercase for case-insensitive comparison
                                                                     const docTypeValue = docType.value.toLowerCase();
 
                                                                     if (docTypeValue.includes('ordinance')) {
@@ -357,21 +360,62 @@ $result = $conn->query($sql);
                                                         </div>
                                                         <div class="mb-3">
                                                             <label for="to_dept_<?= $row['m6_MD_ID'] ?>"
-                                                                class="form-label">To</label>
-                                                            <select class="form-select"
-                                                                id="to_dept_<?= $row['m6_MD_ID'] ?>" name="to_dept"
-                                                                required>
-                                                                <option value="">Select Department</option>
-                                                                <option value="mayors_office">Committee Journal Section
-                                                                </option>
-                                                                <option value="sangguniang_bayan">Archive Section
-                                                                </option>
-                                                                <option value="budget_office">Agenda & Briefing Section
-                                                                </option>
-                                                                <option value="planning_office">Minutes Section</option>
-                                                                <option value="engineering">Ordinance & Resolution
-                                                                    Section</option>
-                                                            </select>
+                                                                class="form-label">To (Select Multiple)</label>
+                                                            <div class="form-control p-0"
+                                                                style="max-height: 200px; overflow-y: auto;">
+                                                                <div class="list-group list-group-flush">
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="ordinance_resolution_section">
+                                                                        Ordinance & Resolution Section
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="minutes_section">
+                                                                        Minutes Section
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="committee_management">
+                                                                        Committee Management System
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="journal_section">
+                                                                        Journal Section
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="public_hearing">
+                                                                        Public Hearing Section
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="archive_section">
+                                                                        Reference and Archive Section
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="research_section">
+                                                                        Legislative Research Section
+                                                                    </label>
+                                                                    <label class="list-group-item">
+                                                                        <input class="form-check-input me-1"
+                                                                            type="checkbox" name="to_dept[]"
+                                                                            value="public_consultation">
+                                                                        Public Consultation Management
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                            <small class="text-muted">Check all departments that
+                                                                apply</small>
                                                         </div>
                                                         <div class="mb-3">
                                                             <label for="remarks_<?= $row['m6_MD_ID'] ?>"
@@ -399,49 +443,49 @@ $result = $conn->query($sql);
                     <?php endif; ?>
                 </tbody>
             </table>
-</div>
+        </div>
     </div>
-            <?php if ($totalPages > 1): ?>
-            <!-- Pagination Controls -->
-            <div class="d-flex justify-content-center mt-4">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination">
-                        <?php if ($page > 1): ?>
-                        <li class="page-item">
-                            <a class="page-link" href="?page=<?= ($page - 1) ?>&<?= http_build_query($params) ?>"
-                                aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <?php endif; ?>
+    <?php if ($totalPages > 1): ?>
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <?php if ($page > 1): ?>
+                <li class="page-item">
+                    <a class="page-link" href="?page=<?= ($page - 1) ?>&<?= http_build_query($params) ?>"
+                        aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <?php endif; ?>
 
-                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                            <a class="page-link" href="?page=<?= $i ?>&<?= http_build_query($params) ?>">
-                                <?= $i ?>
-                            </a>
-                        </li>
-                        <?php endfor; ?>
+                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                    <a class="page-link" href="?page=<?= $i ?>&<?= http_build_query($params) ?>">
+                        <?= $i ?>
+                    </a>
+                </li>
+                <?php endfor; ?>
 
-                        <?php if ($page < $totalPages): ?>
-                        <li class="page-item">
-                            <a class="page-link" href="?page=<?= ($page + 1) ?>&<?= http_build_query($params) ?>"
-                                aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-            </div>
-            <?php endif; ?>
+                <?php if ($page < $totalPages): ?>
+                <li class="page-item">
+                    <a class="page-link" href="?page=<?= ($page + 1) ?>&<?= http_build_query($params) ?>"
+                        aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            </ul>
+        </nav>
+    </div>
+    <?php endif; ?>
 
-            <div class="text-center mt-2 text-muted small">
-                Showing
-                <?= ($offset + 1) ?>-
-                <?= min($offset + $limit, $total) ?> of
-                <?= $total ?> documents
-            </div>
+    <div class="text-center mt-2 text-muted small">
+        Showing
+        <?= ($offset + 1) ?>-
+        <?= min($offset + $limit, $total) ?> of
+        <?= $total ?> documents
+    </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {

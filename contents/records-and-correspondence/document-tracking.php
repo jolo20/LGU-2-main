@@ -5,13 +5,13 @@ require_once '../../includes/header.php';
 
 require_once 'connection.php';
 
-// Get active tab
-$activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'incoming';
+// Default active tab
+$activeTab = 'incoming';
 
 // Pagination setup
-$transitPage = max(1, isset($_GET['transitPage']) ? (int)$_GET['transitPage'] : 1);
-$reviewPage = max(1, isset($_GET['reviewPage']) ? (int)$_GET['reviewPage'] : 1);
-$processedPage = max(1, isset($_GET['processedPage']) ? (int)$_GET['processedPage'] : 1);
+$transitPage = 1;
+$reviewPage = 1;
+$processedPage = 1;
 $itemsPerPage = 5;
 
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -59,15 +59,17 @@ foreach ($allRows as $row) {
     if (empty($row['docket_no'])) {
         // Under Review - no docket number
         $totalItems[1]++;
-        if (($totalItems[1] > ($reviewPage - 1) * $itemsPerPage) && 
-            ($totalItems[1] <= $reviewPage * $itemsPerPage)) {
+        if (($totalItems[1] > ($reviewPage - 1) * $itemsPerPage) &&
+            ($totalItems[1] <= $reviewPage * $itemsPerPage)
+        ) {
             $cols[1][] = $row;
         }
     } else {
         // Processed - has docket number
         $totalItems[2]++;
-        if (($totalItems[2] > ($processedPage - 1) * $itemsPerPage) && 
-            ($totalItems[2] <= $processedPage * $itemsPerPage)) {
+        if (($totalItems[2] > ($processedPage - 1) * $itemsPerPage) &&
+            ($totalItems[2] <= $processedPage * $itemsPerPage)
+        ) {
             $cols[2][] = $row;
         }
     }
@@ -81,34 +83,45 @@ $totalPages = [
 ];
 
 // Function to generate pagination links
-function generatePaginationLinks($currentPage, $totalPages, $tabName) {
+function generatePaginationLinks($currentPage, $totalPages, $tabName)
+{
     if ($totalPages <= 1) return '';
-    
+
     $links = '<nav aria-label="Page navigation" class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">';
-    
+
     // Previous button
     $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
     $links .= sprintf(
         '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>',
-        $prevDisabled, $tabName, $tabName, $currentPage - 1
+        $prevDisabled,
+        $tabName,
+        $tabName,
+        $currentPage - 1
     );
-    
+
     // Page numbers
     for ($i = 1; $i <= $totalPages; $i++) {
         $active = $i === $currentPage ? 'active' : '';
         $links .= sprintf(
             '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d">%d</a></li>',
-            $active, $tabName, $tabName, $i, $i
+            $active,
+            $tabName,
+            $tabName,
+            $i,
+            $i
         );
     }
-    
+
     // Next button
     $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
     $links .= sprintf(
         '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>',
-        $nextDisabled, $tabName, $tabName, $currentPage + 1
+        $nextDisabled,
+        $tabName,
+        $tabName,
+        $currentPage + 1
     );
-    
+
     $links .= '</ul></nav>';
     return $links;
 }
@@ -128,9 +141,9 @@ $conn->close();
                 <input type="hidden" name="tab" value="<?= htmlspecialchars($activeTab) ?>">
                 <div class="input-group" style="max-width: 300px;">
                     <input type="text" class="form-control form-control-sm" name="search" id="searchInput"
-                           placeholder="Search documents..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+                        placeholder="Search documents..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
                     <button type="button" class="btn-close" id="clearSearch" aria-label="Clear search"
-                            style="display: <?= isset($_GET['search']) && $_GET['search'] !== '' ? 'block' : 'none' ?>;">
+                        style="display: <?= isset($_GET['search']) && $_GET['search'] !== '' ? 'block' : 'none' ?>;">
                     </button>
                     <button class="btn btn-primary btn-sm" type="submit">
                         <i class="fa-solid fa-search"></i>
@@ -145,18 +158,20 @@ $conn->close();
             color: var(--text);
             border: 1px solid transparent;
         }
+
         .nav-tabs .nav-link:hover {
             border-color: var(--brand);
             color: var(--brand);
             isolation: isolate;
         }
+
         .nav-tabs .nav-link.active {
             color: #fff;
             background-color: var(--brand);
             border-color: var(--brand);
         }
     </style>
-<ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link <?= $activeTab === 'incoming' ? 'active' : '' ?>" id="incoming-tab" data-bs-toggle="tab" data-bs-target="#incoming"
                 type="button" role="tab" aria-controls="incoming" aria-selected="<?= $activeTab === 'incoming' ? 'true' : 'false' ?>">Incoming Tasks</button>
@@ -192,9 +207,11 @@ $conn->close();
                         </thead>
                         <tbody>
                             <?php if (empty($cols[0])): ?>
-                                <tr><td colspan="5" class="text-center text-muted py-3">
-                                    <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
-                                </td></tr>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($cols[0] as $doc): ?>
                                     <tr>
@@ -238,9 +255,11 @@ $conn->close();
                         </thead>
                         <tbody>
                             <?php if (empty($cols[1])): ?>
-                                <tr><td colspan="6" class="text-center text-muted py-3">
-                                    <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
-                                </td></tr>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($cols[1] as $doc): ?>
                                     <tr class="<?= empty($doc['docket_no']) ? 'table-warning' : '' ?>">
@@ -263,7 +282,7 @@ $conn->close();
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -284,18 +303,20 @@ $conn->close();
                                 <th>Docket No.</th>
                                 <th>Title</th>
                                 <th>Type</th>
+                                <th>MFL Name</th>
+                                <th>MFL Feedback</th>
                                 <th>Introducers</th>
                                 <th>Date</th>
-                                <th>MFL Name</th>
-                                <th>MFL Feedback</th>       
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($cols[2])): ?>
-                                <tr><td colspan="6" class="text-center text-muted py-3">
-                                    <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
-                                </td></tr>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($cols[2] as $doc): ?>
                                     <tr>
@@ -314,7 +335,7 @@ $conn->close();
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -336,28 +357,31 @@ $conn->close();
                             <div class="col-md-12">
                                 <h6 class="border-bottom pb-2">Document Information</h6>
                                 <p><strong>Docket No:</strong>
-                                <?php if (!empty($doc['docket_no'])): ?>
-                                    <?= htmlspecialchars($doc['docket_no']) ?>
-                                <?php else: ?>
-                                    <span class="badge bg-warning text-dark">Pending Assignment</span>
-                                <?php endif; ?>
+                                    <?php if (!empty($doc['docket_no'])): ?>
+                                        <?= htmlspecialchars($doc['docket_no']) ?>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning text-dark">Pending Assignment</span>
+                                    <?php endif; ?>
                                 </p>
                                 <p><strong>Title:</strong> <?= htmlspecialchars($doc['measure_title']) ?></p>
-                                <p><strong>Content:</strong><p style= "text-align: center;"><?= nl2br(htmlspecialchars($doc["measure_content"], ENT_QUOTES, 'UTF-8')) ?></p></p>
+                                <p><strong>Content:</strong>
+
+                                <p style="text-align: center;"><?= nl2br(htmlspecialchars($doc["measure_content"], ENT_QUOTES, 'UTF-8')) ?></p>
+                                </p>
                                 <p><strong>Type:</strong> <?= htmlspecialchars($doc['measure_type']) ?></p>
-                                <?php if(strcasecmp($doc['measure_type'], 'Ordinance') === 0 && empty($doc['category'])): ?>
+                                <?php if (strcasecmp($doc['measure_type'], 'Ordinance') === 0 && empty($doc['category'])): ?>
                                     <p><strong>Category:</strong> Not Specified</p>
-                                <?php elseif(!empty($doc['category'])): ?>
+                                <?php elseif (!empty($doc['category'])): ?>
                                     <p><strong>Category:</strong> <?= htmlspecialchars($doc['category']) ?></p>
-                                <?php elseif(strcasecmp($doc['measure_type'], 'Resolution') === 0 && empty($doc['subject'])): ?>
+                                <?php elseif (strcasecmp($doc['measure_type'], 'Resolution') === 0 && empty($doc['subject'])): ?>
                                     <p><strong>Category:</strong> Not Specified</p>
-                                <?php elseif(!empty($doc['subject'])): ?>
+                                <?php elseif (!empty($doc['subject'])): ?>
                                     <p><strong>Category:</strong> <?= htmlspecialchars($doc['subject']) ?></p>
                                 <?php endif; ?>
-                                <p><strong>Checked By:</strong> <?= htmlspecialchars($doc['checked_by']) ?></p>
+                                <p><strong>Recently Checked By:</strong> <?= htmlspecialchars($doc['checked_by']) ?></p>
                                 <p><strong>Status:</strong> <?= ucfirst(htmlspecialchars($doc['measure_status'])) ?></p>
-                                <p><strong>MFL Name:</strong> <?= ucfirst(htmlspecialchars($doc['MFL_Name'])) ?></p>
-                                <p><strong>MFL Feedback:</strong> <?= ucfirst(htmlspecialchars($doc['MFL_Feedback'])) ?></p>
+                                <p><strong>MFL Name:</strong> <?= ucfirst(htmlspecialchars((string)$doc['MFL_Name'])) ?: 'Pending' ?></p>
+                                <p><strong>MFL Feedback:</strong> <?= ucfirst(htmlspecialchars((string)$doc['MFL_Feedback'])) ?: 'No Feedback' ?></p>
                                 <p><strong>Created:</strong> <?= date("m/d/Y", strtotime($doc["date_created"])) ?></p>
                             </div>
                         </div>
@@ -369,180 +393,173 @@ $conn->close();
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle clear search button
-    const clearButton = document.getElementById('clearSearch');
     const searchInput = document.getElementById('searchInput');
-    
-    if (clearButton) {
-        clearButton.addEventListener('click', function(e) {
-            e.preventDefault(); // Prevent button from keeping focus
-            searchInput.value = '';
-            const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-            const url = new URL(window.location.href);
-            url.searchParams.delete('search');
-            url.searchParams.set('tab', currentTab);
-            window.location.href = url.toString();
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle clear search button
 
-        // Show/hide clear button based on input
-        searchInput.addEventListener('input', function() {
-            clearButton.style.display = this.value.trim() === '' ? 'none' : 'block';
-        });
+        const clearButton = document.getElementById('clearSearch');
+        if (clearButton) {
+            clearButton.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent button from keeping focus
+                searchInput.value = '';
+                const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
+                const url = new URL(window.location.href);
+                url.searchParams.delete('search');
+                url.searchParams.set('tab', currentTab);
+                window.location.href = url.toString();
+            });
 
-        // Remove focus from clear button after click
-        clearButton.addEventListener('mouseup', function() {
+            // Show/hide clear button based on input
+            searchInput.addEventListener('input', function() {
+                clearButton.style.display = this.value.trim() === '' ? 'none' : 'block';
+            });
+
+            // Remove focus from clear button after click
+            clearButton.addEventListener('mouseup', function() {
+                this.blur();
+            });
+        }
+
+        // Remove focus from search button after click
+        document.querySelector('#searchForm button[type="submit"]').addEventListener('mouseup', function() {
             this.blur();
         });
-    }
 
-    // Remove focus from search button after click
-    document.querySelector('#searchForm button[type="submit"]').addEventListener('mouseup', function() {
-        this.blur();
-    });
-    
-    // Update pagination links when there's a search query
-    function updatePaginationLinks() {
-        const searchQuery = document.getElementById('searchInput').value.trim();
-        const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-        
-        document.querySelectorAll('.pagination .page-link').forEach(link => {
-            const url = new URL(link.href);
-            if (searchQuery) {
-                url.searchParams.set('search', searchQuery);
-            }
-            url.searchParams.set('tab', currentTab);
-            link.href = url.toString();
-        });
-    }
-    
-    // Handle search form submission
-    document.getElementById('searchForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const searchInput = document.getElementById('searchInput');
-        const searchTerm = searchInput.value.trim();
-        
-        if (searchTerm === '') {
-            return;
-        }
-
-        // Get current active tab
-        const activeTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-        
-        // Build the URL with current tab and search term
-        const url = new URL(window.location.href);
-        url.searchParams.set('tab', activeTab);
-        url.searchParams.set('search', searchTerm);
-        
-        // Redirect to the search URL
-        window.location.href = url.toString();
-
-        // If using client-side search, prevent form submission and perform search
-        if (window.location.href.includes('search=')) {
-            e.preventDefault();
-            performSearch(searchTerm);
-        }
-    });
-
-    // Handle tab changes
-    const tabLinks = document.querySelectorAll('[data-bs-toggle="tab"]');
-    tabLinks.forEach(tabLink => {
-        tabLink.addEventListener('shown.bs.tab', function (e) {
-            const tabId = e.target.id.replace('-tab', '');
-            const url = new URL(window.location.href);
-            url.searchParams.set('tab', tabId);
-            
-            // Preserve search and pagination
+        // Update pagination links when there's a search query
+        function updatePaginationLinks() {
             const searchQuery = document.getElementById('searchInput').value.trim();
-            if (searchQuery) {
-                url.searchParams.set('search', searchQuery);
-            }
-            
-            const pageParam = tabId + 'Page';
-            const currentPage = url.searchParams.get(pageParam);
-            if (currentPage) {
-                url.searchParams.set(pageParam, currentPage);
-            }
-            
-            window.history.replaceState({}, '', url.toString());
-            
-            // Update pagination links with current tab
-            updatePaginationLinks();
-        });
-    });
+            const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
 
-    // Set initial state
-    const url = new URL(window.location.href);
-    const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-    if (!url.searchParams.has('tab')) {
-        url.searchParams.set('tab', currentTab);
-        window.history.replaceState({}, '', url.toString());
-    }
-    
-    // Update pagination links on page load
-    updatePaginationLinks();
-
-    const searchInput = document.getElementById('searchInput');
-    const tables = document.querySelectorAll('table');
-    const allRows = Array.from(document.querySelectorAll('table tbody tr')).filter(row => !row.querySelector('td[colspan]'));
-    const originalRows = [...allRows];
-
-    function performSearch(searchTerm) {
-        searchTerm = searchTerm.toLowerCase();
-        let hasAnyResults = false;
-        
-        originalRows.forEach(row => {
-            const text = Array.from(row.cells)
-                .map(cell => cell.textContent.toLowerCase())
-                .join(' ');
-
-            if (text.includes(searchTerm)) {
-                row.style.display = '';
-                hasAnyResults = true;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        // Update empty state for each table
-        tables.forEach(table => {
-            const tbody = table.querySelector('tbody');
-            const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none' && !row.classList.contains('no-results'));
-            
-            // Remove existing no results row if it exists
-            const existingNoResults = tbody.querySelector('tr.no-results');
-            if (existingNoResults) {
-                existingNoResults.remove();
-            }
-
-            // Get the number of columns for this table
-            const colCount = table.querySelector('thead tr').children.length;
-
-            // Add no results row if needed
-            if (visibleRows.length === 0) {
-                const noResultsRow = document.createElement('tr');
-                noResultsRow.className = 'no-results';
-                const cell = document.createElement('td');
-                cell.colSpan = colCount;
-                cell.className = 'text-center text-muted py-3';
-                cell.innerHTML = searchTerm ? 'No matching documents found for "' + searchTerm + '"' : 'No documents available';
-                noResultsRow.appendChild(cell);
-                tbody.appendChild(noResultsRow);
-            }
-        });
-    }
-
-    // Handle real-time search
-    searchInput.addEventListener('input', function() {
-        performSearch(this.value);
-    });
-
-    // Handle form submission
-    document.getElementById('searchForm').addEventListener('submit', function(e) {
-        if (searchInput.value.trim() === '') {
-            e.preventDefault(); // Prevent empty submissions
+            document.querySelectorAll('.pagination .page-link').forEach(link => {
+                const url = new URL(link.href);
+                if (searchQuery) {
+                    url.searchParams.set('search', searchQuery);
+                }
+                url.searchParams.set('tab', currentTab);
+                link.href = url.toString();
+            });
         }
+
+        // Handle search form submission
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim();
+
+            if (searchTerm === '') {
+                return;
+            }
+
+            // Get current active tab
+            const activeTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
+
+            // Build the URL with current tab and search term
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', activeTab);
+            url.searchParams.set('search', searchTerm);
+
+            // Redirect to the search URL
+            window.location.href = url.toString();
+
+            // If using client-side search, prevent form submission and perform search
+            if (window.location.href.includes('search=')) {
+                e.preventDefault();
+                performSearch(searchTerm);
+            }
+        });
+
+        // Handle tab changes using localStorage
+        const tabLinks = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabLinks.forEach(tabLink => {
+            tabLink.addEventListener('shown.bs.tab', function(e) {
+                const tabId = e.target.id.replace('-tab', '');
+                // Save active tab to localStorage
+                localStorage.setItem('activeDocumentTab', tabId);
+            });
+        });
+
+        // Set active tab on page load based on localStorage
+        const savedTab = localStorage.getItem('activeDocumentTab');
+        if (savedTab) {
+            const tabToActivate = document.querySelector(`#${savedTab}-tab`);
+            if (tabToActivate) {
+                const tab = new bootstrap.Tab(tabToActivate);
+                tab.show();
+            }
+        }
+
+        // Set initial state
+        const url = new URL(window.location.href);
+        const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
+        if (!url.searchParams.has('tab')) {
+            url.searchParams.set('tab', currentTab);
+            window.history.replaceState({}, '', url.toString());
+        }
+
+        // Update pagination links on page load
+        updatePaginationLinks();
+
+        const searchInput = document.getElementById('searchInput');
+        const tables = document.querySelectorAll('table');
+        const allRows = Array.from(document.querySelectorAll('table tbody tr')).filter(row => !row.querySelector('td[colspan]'));
+        const originalRows = [...allRows];
+
+        function performSearch(searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+            let hasAnyResults = false;
+
+            originalRows.forEach(row => {
+                const text = Array.from(row.cells)
+                    .map(cell => cell.textContent.toLowerCase())
+                    .join(' ');
+
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                    hasAnyResults = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update empty state for each table
+            tables.forEach(table => {
+                const tbody = table.querySelector('tbody');
+                const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none' && !row.classList.contains('no-results'));
+
+                // Remove existing no results row if it exists
+                const existingNoResults = tbody.querySelector('tr.no-results');
+                if (existingNoResults) {
+                    existingNoResults.remove();
+                }
+
+                // Get the number of columns for this table
+                const colCount = table.querySelector('thead tr').children.length;
+
+                // Add no results row if needed
+                if (visibleRows.length === 0) {
+                    const noResultsRow = document.createElement('tr');
+                    noResultsRow.className = 'no-results';
+                    const cell = document.createElement('td');
+                    cell.colSpan = colCount;
+                    cell.className = 'text-center text-muted py-3';
+                    cell.innerHTML = searchTerm ? 'No matching documents found for "' + searchTerm + '"' : 'No documents available';
+                    noResultsRow.appendChild(cell);
+                    tbody.appendChild(noResultsRow);
+                }
+            });
+        }
+
+        // Handle real-time search
+        searchInput.addEventListener('input', function() {
+            performSearch(this.value);
+        });
+
+        // Handle form submission
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            if (searchInput.value.trim() === '') {
+                e.preventDefault(); // Prevent empty submissions
+            }
+        });
     });
-});
 </script>
 <?php require_once '../../includes/footer.php' ?>

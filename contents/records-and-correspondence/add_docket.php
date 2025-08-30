@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    SET docket_no = ?, 
                        checked_by = ?,
                        category = ?,
-                       subject = ?,
+                       `subject` = ?,
                        record_remarks = ?,
                        datetime_submitted = NOW()
                    WHERE m6_MD_ID = ?";
