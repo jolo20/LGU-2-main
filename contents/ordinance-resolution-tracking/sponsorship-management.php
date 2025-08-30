@@ -1,3 +1,9 @@
+<?php
+require_once '../../auth.php';
+$pageTitle = "Document Tracking";
+require_once '../../includes/header.php';
+?>
+
 <div class="cardish">
   <h3 class="mb-3">Sponsorship & Author Management</h3>
   <div class="table-responsive">
@@ -14,3 +20,4 @@
     </table>
   </div>
 </div>
+<?php require_once '../../includes/footer.php'; ?>

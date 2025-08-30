@@ -18,11 +18,16 @@
 }
 
 .modal-dialog {
-    margin: 0 !important;
+    margin: 0 0 0 10% !important;
     position: relative !important;
     width: 100%;
     max-width: 500px;
     pointer-events: all;
+}
+
+.modal-dialog.modal-xl {
+    
+    max-width: 1200px !important;
 }
 
 .modal-content {
@@ -39,4 +44,33 @@
     overflow-y: auto;
 }
 
-/* Fix for any navigation bar overlap */
+/* Logout modal specific styles */
+#logoutConfirmModal .modal-dialog {
+    max-width: 300px !important;
+}
+
+#logoutConfirmModal .modal-body {
+    padding: 1rem;
+    font-size: 0.9rem;
+}
+
+#logoutConfirmModal .modal-header {
+    padding: 0.75rem 1rem;
+}
+
+#logoutConfirmModal .modal-footer {
+    padding: 0.75rem;
+}
+
+#logoutConfirmModal .modal-title {
+    font-size: 1rem;
+}
+
+#logoutConfirmModal .btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+#logoutConfirmModal .modal-backdrop {
+    display: block !important;
+}

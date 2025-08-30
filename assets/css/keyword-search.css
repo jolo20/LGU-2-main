@@ -1,0 +1,18 @@
+.table th, 
+.table td {
+    vertical-align: middle;
+}
+
+.btn-action {
+    width: 75px;
+    margin: 2px;
+}
+
+.nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.tab-content {
+    padding-top: 1rem;
+}
