@@ -29,16 +29,24 @@ if ($search !== '') {
 $params = $_GET;
 unset($params['transitPage'], $params['reviewPage'], $params['processedPage']);
 
-$query = "SELECT *
+$query = "SELECT md.m6_MD_ID, md.measure_title, md.measure_content,
+               md.date_created, md.measure_type, md.measure_status,
+               md.checking_remarks, md.checking_notes, md.checked_by,
+               md.datetime_submitted, md.introducers, md.docket_no, 
+               md.category, md.subject, md.MFL_Name, md.MFL_Feedback
     FROM m6_measuredocketing_fromresearch md 
     $whereClause
     ORDER BY md.date_created DESC";
 
 $result = $conn->query($query);
 $allRows = [];
+$noResults = false;
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $allRows[] = $row;
+    }
+    if (empty($allRows) && !empty($search)) {
+        $noResults = true;
     }
 }
 
@@ -72,6 +80,39 @@ $totalPages = [
     ceil($totalItems[2] / $itemsPerPage)
 ];
 
+// Function to generate pagination links
+function generatePaginationLinks($currentPage, $totalPages, $tabName) {
+    if ($totalPages <= 1) return '';
+    
+    $links = '<nav aria-label="Page navigation" class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">';
+    
+    // Previous button
+    $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
+    $links .= sprintf(
+        '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>',
+        $prevDisabled, $tabName, $tabName, $currentPage - 1
+    );
+    
+    // Page numbers
+    for ($i = 1; $i <= $totalPages; $i++) {
+        $active = $i === $currentPage ? 'active' : '';
+        $links .= sprintf(
+            '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d">%d</a></li>',
+            $active, $tabName, $tabName, $i, $i
+        );
+    }
+    
+    // Next button
+    $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
+    $links .= sprintf(
+        '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>',
+        $nextDisabled, $tabName, $tabName, $currentPage + 1
+    );
+    
+    $links .= '</ul></nav>';
+    return $links;
+}
+
 // Close the connection after getting data
 $conn->close();
 ?>
@@ -88,6 +129,9 @@ $conn->close();
                 <div class="input-group" style="max-width: 300px;">
                     <input type="text" class="form-control form-control-sm" name="search" id="searchInput"
                            placeholder="Search documents..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+                    <button type="button" class="btn-close" id="clearSearch" aria-label="Clear search"
+                            style="display: <?= isset($_GET['search']) && $_GET['search'] !== '' ? 'block' : 'none' ?>;">
+                    </button>
                     <button class="btn btn-primary btn-sm" type="submit">
                         <i class="fa-solid fa-search"></i>
                         <span class="visually-hidden">Search</span>
@@ -96,6 +140,22 @@ $conn->close();
             </form>
         </div>
     </div>
+    <style>
+        .nav-tabs .nav-link {
+            color: var(--text);
+            border: 1px solid transparent;
+        }
+        .nav-tabs .nav-link:hover {
+            border-color: var(--brand);
+            color: var(--brand);
+            isolation: isolate;
+        }
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background-color: var(--brand);
+            border-color: var(--brand);
+        }
+    </style>
 <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link <?= $activeTab === 'incoming' ? 'active' : '' ?>" id="incoming-tab" data-bs-toggle="tab" data-bs-target="#incoming"
@@ -115,13 +175,13 @@ $conn->close();
         <!-- Incoming Tasks Tab -->
         <div class="tab-pane fade <?= $activeTab === 'incoming' ? 'show active' : '' ?>" id="incoming" role="tabpanel" aria-labelledby="incoming-tab">
             <div class="card mb-3">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
                     Incoming Tasks
                     <span class="badge bg-light text-dark"><?= count($cols[0]) ?></span>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-sm table-bordered mb-0">
-                        <thead class="table-secondary">
+                        <thead class="text-white" style="background:var(--brand)">
                             <tr>
                                 <th>Docket No.</th>
                                 <th>Title</th>
@@ -132,7 +192,9 @@ $conn->close();
                         </thead>
                         <tbody>
                             <?php if (empty($cols[0])): ?>
-                                <tr><td colspan="3" class="text-center">No documents</td></tr>
+                                <tr><td colspan="5" class="text-center text-muted py-3">
+                                    <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
+                                </td></tr>
                             <?php else: ?>
                                 <?php foreach ($cols[0] as $doc): ?>
                                     <tr>
@@ -152,28 +214,33 @@ $conn->close();
                     </table>
                 </div>
             </div>
+            <?php echo generatePaginationLinks($transitPage, $totalPages[0], 'transit'); ?>
         </div>
 
         <!-- Under Review Tab -->
         <div class="tab-pane fade <?= $activeTab === 'review' ? 'show active' : '' ?>" id="review" role="tabpanel" aria-labelledby="review-tab">
             <div class="card mb-3">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
                     Under Review
                     <span class="badge bg-light text-dark"><?= count($cols[1]) ?></span>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-sm table-bordered mb-0">
-                        <thead class="table-secondary">
+                        <thead class="text-white" style="background:var(--brand)">
                             <tr>
                                 <th>Status</th>
                                 <th>Title</th>
+                                <th>Type</th>
+                                <th>Introducers</th>
                                 <th>Date</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($cols[1])): ?>
-                                <tr><td colspan="4" class="text-center">No documents</td></tr>
+                                <tr><td colspan="6" class="text-center text-muted py-3">
+                                    <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
+                                </td></tr>
                             <?php else: ?>
                                 <?php foreach ($cols[1] as $doc): ?>
                                     <tr class="<?= empty($doc['docket_no']) ? 'table-warning' : '' ?>">
@@ -185,7 +252,9 @@ $conn->close();
                                             <?php endif; ?>
                                         </td>
                                         <td><?= htmlspecialchars($doc['measure_title']) ?></td>
-                                        <td><?= htmlspecialchars($doc['date_created']) ?></td>
+                                        <td><?= htmlspecialchars($doc['measure_type']) ?></td>
+                                        <td><?= htmlspecialchars($doc['introducers']) ?></td>
+                                        <td><?= htmlspecialchars(date('F j, Y', strtotime($doc['date_created']))) ?></td>
                                         <td>
                                             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
                                                 Details
@@ -198,34 +267,45 @@ $conn->close();
                     </table>
                 </div>
             </div>
+            <?php echo generatePaginationLinks($reviewPage, $totalPages[1], 'review'); ?>
         </div>
 
         <!-- Processed Tab -->
         <div class="tab-pane fade <?= $activeTab === 'processed' ? 'show active' : '' ?>" id="processed" role="tabpanel" aria-labelledby="processed-tab">
             <div class="card mb-3">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
                     Processed
                     <span class="badge bg-light text-dark"><?= count($cols[2]) ?></span>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-sm table-bordered mb-0">
-                        <thead class="table-secondary">
+                        <thead class="text-white" style="background:var(--brand)">
                             <tr>
                                 <th>Docket No.</th>
                                 <th>Title</th>
+                                <th>Type</th>
+                                <th>Introducers</th>
                                 <th>Date</th>
+                                <th>MFL Name</th>
+                                <th>MFL Feedback</th>       
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($cols[2])): ?>
-                                <tr><td colspan="4" class="text-center">No documents</td></tr>
+                                <tr><td colspan="6" class="text-center text-muted py-3">
+                                    <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
+                                </td></tr>
                             <?php else: ?>
                                 <?php foreach ($cols[2] as $doc): ?>
                                     <tr>
-                                        <td><?= htmlspecialchars($doc['m6_MD_Code']) ?></td>
+                                        <td><?= htmlspecialchars($doc['docket_no']) ?></td>
                                         <td><?= htmlspecialchars($doc['measure_title']) ?></td>
-                                        <td><?= htmlspecialchars($doc['date_created']) ?></td>
+                                        <td><?= htmlspecialchars($doc['measure_type']) ?></td>
+                                        <td><?= htmlspecialchars((string)$doc['MFL_Name']) ?: '<span class="badge bg-warning text-dark">Pending</span>' ?></td>
+                                        <td><?= htmlspecialchars((string)$doc['MFL_Feedback']) ?: '<span class="badge bg-secondary">No Feedback</span>' ?></td>
+                                        <td><?= htmlspecialchars($doc['introducers']) ?></td>
+                                        <td><?= htmlspecialchars(date('F j, Y', strtotime($doc['date_created']))) ?></td>
                                         <td>
                                             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
                                                 Details
@@ -238,6 +318,7 @@ $conn->close();
                     </table>
                 </div>
             </div>
+            <?php echo generatePaginationLinks($processedPage, $totalPages[2], 'processed'); ?>
         </div>
     </div>
 
@@ -275,6 +356,8 @@ $conn->close();
                                 <?php endif; ?>
                                 <p><strong>Checked By:</strong> <?= htmlspecialchars($doc['checked_by']) ?></p>
                                 <p><strong>Status:</strong> <?= ucfirst(htmlspecialchars($doc['measure_status'])) ?></p>
+                                <p><strong>MFL Name:</strong> <?= ucfirst(htmlspecialchars($doc['MFL_Name'])) ?></p>
+                                <p><strong>MFL Feedback:</strong> <?= ucfirst(htmlspecialchars($doc['MFL_Feedback'])) ?></p>
                                 <p><strong>Created:</strong> <?= date("m/d/Y", strtotime($doc["date_created"])) ?></p>
                             </div>
                         </div>
@@ -287,23 +370,78 @@ $conn->close();
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle clear search button
+    const clearButton = document.getElementById('clearSearch');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (clearButton) {
+        clearButton.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent button from keeping focus
+            searchInput.value = '';
+            const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
+            const url = new URL(window.location.href);
+            url.searchParams.delete('search');
+            url.searchParams.set('tab', currentTab);
+            window.location.href = url.toString();
+        });
+
+        // Show/hide clear button based on input
+        searchInput.addEventListener('input', function() {
+            clearButton.style.display = this.value.trim() === '' ? 'none' : 'block';
+        });
+
+        // Remove focus from clear button after click
+        clearButton.addEventListener('mouseup', function() {
+            this.blur();
+        });
+    }
+
+    // Remove focus from search button after click
+    document.querySelector('#searchForm button[type="submit"]').addEventListener('mouseup', function() {
+        this.blur();
+    });
+    
+    // Update pagination links when there's a search query
+    function updatePaginationLinks() {
+        const searchQuery = document.getElementById('searchInput').value.trim();
+        const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
+        
+        document.querySelectorAll('.pagination .page-link').forEach(link => {
+            const url = new URL(link.href);
+            if (searchQuery) {
+                url.searchParams.set('search', searchQuery);
+            }
+            url.searchParams.set('tab', currentTab);
+            link.href = url.toString();
+        });
+    }
+    
     // Handle search form submission
     document.getElementById('searchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
         const searchInput = document.getElementById('searchInput');
-        if (searchInput.value.trim() === '') {
-            e.preventDefault();
+        const searchTerm = searchInput.value.trim();
+        
+        if (searchTerm === '') {
             return;
         }
-        // Add current tab to form if not already present
+
+        // Get current active tab
         const activeTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-        let tabInput = this.querySelector('input[name="tab"]');
-        if (!tabInput) {
-            tabInput = document.createElement('input');
-            tabInput.type = 'hidden';
-            tabInput.name = 'tab';
-            this.appendChild(tabInput);
+        
+        // Build the URL with current tab and search term
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', activeTab);
+        url.searchParams.set('search', searchTerm);
+        
+        // Redirect to the search URL
+        window.location.href = url.toString();
+
+        // If using client-side search, prevent form submission and perform search
+        if (window.location.href.includes('search=')) {
+            e.preventDefault();
+            performSearch(searchTerm);
         }
-        tabInput.value = activeTab;
     });
 
     // Handle tab changes
@@ -311,19 +449,38 @@ document.addEventListener('DOMContentLoaded', function() {
     tabLinks.forEach(tabLink => {
         tabLink.addEventListener('shown.bs.tab', function (e) {
             const tabId = e.target.id.replace('-tab', '');
-            // Create clean URL with only the tab parameter
-            const baseUrl = window.location.href.split('?')[0];
-            const newUrl = baseUrl + '?tab=' + tabId;
-            window.history.replaceState({}, '', newUrl);
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tabId);
+            
+            // Preserve search and pagination
+            const searchQuery = document.getElementById('searchInput').value.trim();
+            if (searchQuery) {
+                url.searchParams.set('search', searchQuery);
+            }
+            
+            const pageParam = tabId + 'Page';
+            const currentPage = url.searchParams.get(pageParam);
+            if (currentPage) {
+                url.searchParams.set(pageParam, currentPage);
+            }
+            
+            window.history.replaceState({}, '', url.toString());
+            
+            // Update pagination links with current tab
+            updatePaginationLinks();
         });
     });
 
-    // Clean URL on page load if there's no search
-    if (!document.getElementById('searchInput').value) {
-        const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-        const baseUrl = window.location.href.split('?')[0];
-        window.history.replaceState({}, '', baseUrl + '?tab=' + currentTab);
+    // Set initial state
+    const url = new URL(window.location.href);
+    const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
+    if (!url.searchParams.has('tab')) {
+        url.searchParams.set('tab', currentTab);
+        window.history.replaceState({}, '', url.toString());
     }
+    
+    // Update pagination links on page load
+    updatePaginationLinks();
 
     const searchInput = document.getElementById('searchInput');
     const tables = document.querySelectorAll('table');
@@ -332,6 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function performSearch(searchTerm) {
         searchTerm = searchTerm.toLowerCase();
+        let hasAnyResults = false;
         
         originalRows.forEach(row => {
             const text = Array.from(row.cells)
@@ -340,6 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (text.includes(searchTerm)) {
                 row.style.display = '';
+                hasAnyResults = true;
             } else {
                 row.style.display = 'none';
             }
@@ -348,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update empty state for each table
         tables.forEach(table => {
             const tbody = table.querySelector('tbody');
-            const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+            const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none' && !row.classList.contains('no-results'));
             
             // Remove existing no results row if it exists
             const existingNoResults = tbody.querySelector('tr.no-results');
@@ -356,14 +515,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 existingNoResults.remove();
             }
 
+            // Get the number of columns for this table
+            const colCount = table.querySelector('thead tr').children.length;
+
             // Add no results row if needed
             if (visibleRows.length === 0) {
                 const noResultsRow = document.createElement('tr');
                 noResultsRow.className = 'no-results';
                 const cell = document.createElement('td');
-                cell.colSpan = 3;
-                cell.className = 'text-center';
-                cell.textContent = 'No matching documents';
+                cell.colSpan = colCount;
+                cell.className = 'text-center text-muted py-3';
+                cell.innerHTML = searchTerm ? 'No matching documents found for "' + searchTerm + '"' : 'No documents available';
                 noResultsRow.appendChild(cell);
                 tbody.appendChild(noResultsRow);
             }

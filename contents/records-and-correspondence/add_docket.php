@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $measure_id = $_POST['measure_id'];
     $docket_number = $_POST['docket_number'];
     $category = $_POST['category'];
-    $subjects = $_POST['subject'];
+    $subjects = $_POST['subjects'];
     $remarks = $_POST['remarks'];
     $checked_by = "Records and Correspondence Section"; // Fixed value as requested
 
@@ -16,13 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    SET docket_no = ?, 
                        checked_by = ?,
                        category = ?,
-                       subjects = ?,
-                        remarks = ?,
+                       subject = ?,
+                       record_remarks = ?,
                        datetime_submitted = NOW()
                    WHERE m6_MD_ID = ?";
                    
     $stmt = $conn->prepare($updateQuery);
-    $stmt->bind_param("ssiss", $docket_number, $checked_by, $category, $subjects, $remarks, $measure_id);
+    $stmt->bind_param("sssssi", $docket_number, $checked_by, $category, $subjects, $remarks, $measure_id);
     
     if ($stmt->execute()) {
         // Redirect back to measure-docketing.php with success message

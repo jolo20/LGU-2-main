@@ -20,33 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', () => { if (!isMobile()) closeMobile(); });
 
   
-  document.querySelector('.settings-link').addEventListener('click', function(e) {
-    e.preventDefault();
-    const href = this.getAttribute('data-href');
-    loadLink(this);
-  });
-  document.querySelector('.profile-link').addEventListener('click', function(e) {
-    e.preventDefault();
-    const href = this.getAttribute('data-href');
-    loadLink(this);
-  });
+  // Handle settings and profile links normally - no special handling needed
 
   // Expand/collapse groups + remember state
   const storageKeyGroup = 'lgu_open_groups';
   const openGroups = new Set(JSON.parse(localStorage.getItem(storageKeyGroup) || '[]'));
- // Keep Dashboard always open & exclude it from being closed by other group clicks
-const dashboardHref = 'dashboard.php'; // <-- change this if your dashboard data-href is different
-const dashboardGroup = Array.from(groups).find(g =>
-  !!g.querySelector(`.sublist a[data-href="${dashboardHref}"]`)
-);
-
-// ensure dashboard group is open on load and recorded in openGroups
-if (dashboardGroup) {
-  const dashIdx = Array.from(groups).indexOf(dashboardGroup);
-  dashboardGroup.classList.add('open');
-  openGroups.add(`g${dashIdx}`);
-  localStorage.setItem(storageKeyGroup, JSON.stringify([...openGroups]));
-}
+// No special handling for dashboard since it's a direct link now
 
 groups.forEach((g, idx) => {
   const btn = g.querySelector('.group-toggle');
@@ -54,12 +33,9 @@ groups.forEach((g, idx) => {
   if (openGroups.has(key)) g.classList.add('open');
 
   btn.addEventListener('click', () => {
-    // If user clicked the dashboard group header, ignore — dashboard stays open
-    if (g === dashboardGroup) return;
-
-    // Close all other groups except the clicked group AND the dashboard group
+    // Close all other groups except the clicked group
     groups.forEach((otherG, otherIdx) => {
-      if (otherG !== g && otherG !== dashboardGroup) {
+      if (otherG !== g) {
         otherG.classList.remove('open');
         openGroups.delete(`g${otherIdx}`);
       }
@@ -81,99 +57,7 @@ groups.forEach((g, idx) => {
 
 
 
-  // AJAX load submodules
-  const links = document.querySelectorAll('.sublist a, .settings-link, .profile-link');
-  const storageKeyActive = 'lgu_active_href';
-
-  function setActive(link) {
-    document.querySelectorAll('.sublist a.active, .dropdown-item.active').forEach(a => a.classList.remove('active'));
-    link.classList.add('active');
-    const group = link.closest('.nav-group');
-    if (group && !group.classList.contains('open')) group.classList.add('open');
-  }
-
-  async function loadLink(link, pushState = true) {
-    const href = link.getAttribute('data-href');
-    if (!href) return;
-
-    setActive(link);
-
-    content.innerHTML = `
-      <div class="cardish">
-        <div class="d-flex align-items-center gap-2">
-          <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
-          <strong>Loading ${link.textContent.trim()}...</strong>
-        </div>
-      </div>
-    `;
-
-    try {
-      const resp = await fetch(href, { cache: 'no-store' });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const html = await resp.text();
-      content.innerHTML = html;
-      localStorage.setItem(storageKeyActive, href);
-
-      // Update URL
-      if (pushState) {
-        const u = new URL(window.location.href);
-        u.searchParams.set('src', href);
-        history.pushState({ src: href }, '', u.toString());
-      }
-
-
-    } catch (e) {
-      content.innerHTML = `
-        <div class="cardish">
-          <h3 class="mb-2">Failed to load</h3>
-          <p class="text-muted">Could not load: <code>${href}</code> (${e.message}).</p>
-        </div>
-      `;
-      console.error(e);
-    }
-  }
-
-  links.forEach(a => {
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      loadLink(a);
-    });
-    a.setAttribute('tabindex','0');
-    a.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); a.click(); }});
-  });
-
-  // Restore last visited or from URL ?src=
-  const param = new URLSearchParams(window.location.search).get('src');
-  const last = param || localStorage.getItem(storageKeyActive);
-  if (last) {
-    const found = Array.from(links).find(a => a.getAttribute('data-href') === last);
-    if (found) loadLink(found, false);
-  }
-
-  // Popstate for back/forward
-  window.addEventListener('popstate', (ev) => {
-    const src = (ev.state && ev.state.src) || new URLSearchParams(window.location.search).get('src');
-    if (!src) return;
-    const found = Array.from(links).find(a => a.getAttribute('data-href') === src);
-    if (found) loadLink(found, false);
-  });
 });
-document.querySelectorAll('[data-href]').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        let url = this.getAttribute('data-href');
-        // Load into main content area
-        document.getElementById('main-content').innerHTML = '<div>Loading...</div>';
-        fetch(url)
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('main-content').innerHTML = html;
-            });
-    });
-});
-
-const param = new URLSearchParams(window.location.search).get('src');
-const last = param || localStorage.getItem(storageKeyActive) || 'dashboard.php';
 
 // Logout confirmation handling
 (function () {

@@ -1,6 +1,7 @@
 :root{
   --brand:#115272;
   --brand-dark:#115272;
+  --hover: rgba(255,255,255,.08);
   --sidebar-w:270px;
   --header-h:60px;
   --footer-h:48px;

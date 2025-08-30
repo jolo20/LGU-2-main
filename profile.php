@@ -1,6 +1,5 @@
-<?php require_once __DIR__ . '/auth.php'; ?>
-<?php
-require_once __DIR__ . '/auth.php';
+<?php require_once __DIR__ . '/auth.php'; 
+include 'includes/header.php';
 
 // Database connection
 define('DB_HOST', 'localhost');
@@ -128,7 +127,6 @@ if ($mysqli->connect_errno) {
     $mysqli->close();
 }
 ?>
-<div class="cardish">
                 <div class="card shadow mx-auto" style="max-width: 600px">
                     <div class="card-body p-4">
                         <h2 class="card-title mb-4">Account Settings</h2>
@@ -195,7 +193,7 @@ if ($mysqli->connect_errno) {
                         </form>
                     </div>
                 </div>
-            </div>
+        
 <script>
     // Image preview
     document.getElementById('avatar').addEventListener('change', function(e) {
@@ -208,3 +206,4 @@ if ($mysqli->connect_errno) {
         }
     });
 </script>
+<?php include 'includes/footer.php'; ?>

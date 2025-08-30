@@ -134,23 +134,43 @@ if ($documentsResult) {
 <div class="cardish">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Categorization & Classification</h2>
-        <form class="d-flex" method="GET" action="">
-            <div class="input-group">
-                <input type="text" class="form-control" name="search" placeholder="Search records..."
-                    value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
-                <button class="btn btn-primary" type="submit">
-                    <i class="fa-solid fa-search"></i> Search
-                </button>
+        <form class="d-flex" method="GET" action="" id="searchForm">
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" class="form-control form-control-sm" name="search" placeholder="Search records..."
+                       value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>" id="searchInput">
                 <?php if (isset($_GET['search']) && $_GET['search'] !== ''): ?>
-                <a href="?" class="btn btn-outline-secondary">Clear</a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSearch">
+                    <i class="fa-solid fa-times"></i>
+                    <span class="visually-hidden">Clear</span>
+                </button>
                 <?php endif; ?>
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="fa-solid fa-search"></i>
+                    <span class="visually-hidden">Search</span>
+                </button>
             </div>
         </form>
     </div>
+    <style>
+        .nav-tabs .nav-link {
+            color: var(--text);
+            border: 1px solid transparent;
+        }
+        .nav-tabs .nav-link:hover {
+            border-color: var(--hover);
+            color: var(--brand);
+            isolation: isolate;
+        }
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background-color: var(--brand);
+            border-color: var(--brand);
+        }
+    </style>
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="ordinances-tab" data-bs-toggle="tab" data-bs-target="#ordinances" type="button"
-                role="tab" aria-controls="ordinances" aria-selected="false">Proposed Ordinances</button>
+            <button class="nav-link active" id="ordinances-tab" data-bs-toggle="tab" data-bs-target="#ordinances" type="button"
+                role="tab" aria-controls="ordinances" aria-selected="true">Proposed Ordinances</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="resolutions-tab" data-bs-toggle="tab" data-bs-target="#resolutions"
@@ -158,7 +178,116 @@ if ($documentsResult) {
         </li>
     </ul>
     <div class="row">
-        <!-- Left Column - Categories -->
+        <div class="col-md-9">
+            <div class="card mb-3">
+                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
+                    Documents
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="text-white" style="background:var(--brand)">
+                            <tr>
+                                <th>Docket No.</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Category</th>
+                                <th>Subject</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($documents)): ?>
+                            <tr>
+                                <td colspan="7" class="text-center">No documents found</td>
+                            </tr>
+                            <?php else: ?>
+                            <?php foreach ($documents as $doc): ?>
+                            <tr>
+                                <td>
+                                    <?= htmlspecialchars($doc['docket_no']) ?>
+                                </td>
+                                <td>
+                                    <?= htmlspecialchars($doc['measure_title']) ?>
+                                </td>
+                                <td>
+                                    <?= htmlspecialchars($doc['measure_type']) ?>
+                                </td>
+                                <td>
+                                    <span
+                                        class="badge bg-<?= $doc['measure_status'] === 'approved' ? 'success' : 
+                                                                   ($doc['measure_status'] === 'pending' ? 'warning' : 'secondary') ?>">
+                                        <?= ucfirst(htmlspecialchars($doc['measure_status'])) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?= htmlspecialchars($doc['category_name'] ?? 'Uncategorized') ?>
+                                </td>
+                                <td>
+                                    <?= htmlspecialchars($doc['classification_name'] ?? '-') ?>
+                                </td>
+                                <td>
+                                    <?= date('m/d/Y', strtotime($doc['date_created'])) ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                            </div>
+
+            <!-- Pagination Controls -->
+            <?php if ($total > $docLimit): ?>
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Document navigation">
+                    <ul class="pagination">
+                        <?php if ($docPage > 1): ?>
+                        <li class="page-item">
+                            <a class="page-link"
+                                href="?docPage=<?= ($docPage - 1) ?>&catPage=<?= $catPage ?>&<?= http_build_query($params) ?>"
+                                aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <li class="page-item <?= ($i == $docPage) ? 'active' : '' ?>">
+                            <a class="page-link"
+                                href="?docPage=<?= $i ?>&catPage=<?= $catPage ?>&<?= http_build_query($params) ?>">
+                                <?= $i ?>
+                            </a>
+                        </li>
+                        <?php endfor; ?>
+
+                        <?php if ($docPage < $totalPages): ?>
+                        <li class="page-item">
+                            <a class="page-link"
+                                href="?docPage=<?= ($docPage + 1) ?>&catPage=<?= $catPage ?>&<?= http_build_query($params) ?>"
+                                aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+            </div>
+            <?php endif; ?>
+
+            <!-- Always show results count -->
+            <div class="text-center mt-2 text-muted small">
+                <?php if (!empty($searchTerm)): ?>
+                Found
+                <?= $total ?> matching documents
+                <?php else: ?>
+                Showing
+                <?= ($docOffset + 1) ?>-
+                <?= min($docOffset + $docLimit, $total) ?> of
+                <?= $total ?> documents
+                <?php endif; ?>
+            </div>
+        </div>
         <div class="col-md-3">
             <div class="list-group mb-3">
                 <a href="#" class="list-group-item list-group-item-action active">
@@ -169,7 +298,7 @@ if ($documentsResult) {
                 </a>
                 <?php foreach ($categories as $category): ?>
                 <a href="#" class="list-group-item list-group-item-action">
-                    <?= htmlspecialchars($category['category_name']) ?> -
+                    <?= htmlspecialchars($category['category_name']) ?>
                     <?= htmlspecialchars($category['classification_name']) ?>
                     <span class="badge bg-secondary float-end">
                         <?= $category['doc_count'] ?>
@@ -228,120 +357,20 @@ if ($documentsResult) {
                 </ul>
             </div>
         </div>
-
-        <!-- Middle Column - Documents -->
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header bg-dark text-white">Documents</div>
-                <div class="card-body p-0">
-                    <table class="table table-striped table-bordered mb-0" style="width: 100%; table-layout: fixed;">
-                        <thead>
-                            <tr>
-                                <th>Docket No.</th>
-                                <th>Title</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Category</th>
-                                <th>Subject</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($documents)): ?>
-                            <tr>
-                                <td colspan="7" class="text-center">No documents found</td>
-                            </tr>
-                            <?php else: ?>
-                            <?php foreach ($documents as $doc): ?>
-                            <tr>
-                                <td>
-                                    <?= htmlspecialchars($doc['docket_no']) ?>
-                                </td>
-                                <td>
-                                    <?= htmlspecialchars($doc['measure_title']) ?>
-                                </td>
-                                <td>
-                                    <?= htmlspecialchars($doc['measure_type']) ?>
-                                </td>
-                                <td>
-                                    <span
-                                        class="badge bg-<?= $doc['measure_status'] === 'approved' ? 'success' : 
-                                                                   ($doc['measure_status'] === 'pending' ? 'warning' : 'secondary') ?>">
-                                        <?= ucfirst(htmlspecialchars($doc['measure_status'])) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?= htmlspecialchars($doc['category_name'] ?? 'Uncategorized') ?>
-                                </td>
-                                <td>
-                                    <?= htmlspecialchars($doc['classification_name'] ?? '-') ?>
-                                </td>
-                                <td>
-                                    <?= date('m/d/Y', strtotime($doc['date_created'])) ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Pagination Controls -->
-            <?php if ($total > $docLimit): ?>
-            <div class="d-flex justify-content-center mt-4">
-                <nav aria-label="Document navigation">
-                    <ul class="pagination">
-                        <?php if ($docPage > 1): ?>
-                        <li class="page-item">
-                            <a class="page-link"
-                                href="?docPage=<?= ($docPage - 1) ?>&catPage=<?= $catPage ?>&<?= http_build_query($params) ?>"
-                                aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-
-                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?= ($i == $docPage) ? 'active' : '' ?>">
-                            <a class="page-link"
-                                href="?docPage=<?= $i ?>&catPage=<?= $catPage ?>&<?= http_build_query($params) ?>">
-                                <?= $i ?>
-                            </a>
-                        </li>
-                        <?php endfor; ?>
-
-                        <?php if ($docPage < $totalPages): ?>
-                        <li class="page-item">
-                            <a class="page-link"
-                                href="?docPage=<?= ($docPage + 1) ?>&catPage=<?= $catPage ?>&<?= http_build_query($params) ?>"
-                                aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-            </div>
-            <?php endif; ?>
-
-            <!-- Always show results count -->
-            <div class="text-center mt-2 text-muted small">
-                <?php if (!empty($searchTerm)): ?>
-                Found
-                <?= $total ?> matching documents
-                <?php else: ?>
-                Showing
-                <?= ($docOffset + 1) ?>-
-                <?= min($docOffset + $docLimit, $total) ?> of
-                <?= $total ?> documents
-                <?php endif; ?>
-            </div>
-        </div>
     </div>
 </div>
 <script>
-    // No JavaScript needed for basic search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle clear search button
+    const clearButton = document.getElementById('clearSearch');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            window.location.href = window.location.pathname;
+        });
+    }
+});
 </script>
 </script>
 <?php require_once '../../includes/footer.php'; ?>

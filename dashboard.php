@@ -1,4 +1,6 @@
-<?php require_once __DIR__ . '/auth.php'; ?>
+<?php require_once __DIR__ . '/auth.php'; 
+ include 'includes/header.php';
+?>
 <div class="cardish">
   <h1>Dashboard</h1>
   <p>Welcome to your LGU Dashboard.</p>
@@ -33,3 +35,4 @@
     <li>Committee meeting set for Aug 20, 2025</li>
   </ul>
 </div>
+<?php include 'includes/footer.php'; ?>
