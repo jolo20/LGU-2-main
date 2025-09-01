@@ -56,15 +56,7 @@ $totalItems = [0, 0, 0];
 $pages = [1, 1, 1];
 
 foreach ($allRows as $row) {
-    if ($row['measure_status'] === 'incoming' || empty($row['measure_status'])) {
-        // Incoming tasks
-        $totalItems[0]++;
-        if (($totalItems[0] > ($transitPage - 1) * $itemsPerPage) &&
-            ($totalItems[0] <= $transitPage * $itemsPerPage)
-        ) {
-            $cols[0][] = $row;
-        }
-    } elseif (empty($row['docket_no'])) {
+    if (empty($row['docket_no'])) {
         // Under Review - no docket number
         $totalItems[1]++;
         if (($totalItems[1] > ($reviewPage - 1) * $itemsPerPage) &&
@@ -93,23 +85,17 @@ $totalPages = [
 // Function to generate pagination links
 function generatePaginationLinks($currentPage, $totalPages, $tabName)
 {
-    global $activeTab, $search;
+    global $activeTab;
     if ($totalPages <= 1) return '';
 
     $links = '<nav aria-label="Page navigation" class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">';
 
-    // Build base URL with search parameter if exists
-    $baseUrl = '?tab=' . $activeTab;
-    if (!empty($search)) {
-        $baseUrl .= '&search=' . urlencode($search);
-    }
-
     // Previous button
     $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
     $links .= sprintf(
-        '<li class="page-item %s"><a class="page-link" href="%s&%sPage=%d" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>',
+        '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>',
         $prevDisabled,
-        $baseUrl,
+        $activeTab,
         $tabName,
         $currentPage - 1
     );
@@ -118,9 +104,9 @@ function generatePaginationLinks($currentPage, $totalPages, $tabName)
     for ($i = 1; $i <= $totalPages; $i++) {
         $active = $i === $currentPage ? 'active' : '';
         $links .= sprintf(
-            '<li class="page-item %s"><a class="page-link" href="%s&%sPage=%d">%d</a></li>',
+            '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d">%d</a></li>',
             $active,
-            $baseUrl,
+            $activeTab,
             $tabName,
             $i,
             $i
@@ -130,9 +116,9 @@ function generatePaginationLinks($currentPage, $totalPages, $tabName)
     // Next button
     $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
     $links .= sprintf(
-        '<li class="page-item %s"><a class="page-link" href="%s&%sPage=%d" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>',
+        '<li class="page-item %s"><a class="page-link" href="?tab=%s&%sPage=%d" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>',
         $nextDisabled,
-        $baseUrl,
+        $activeTab,
         $tabName,
         $currentPage + 1
     );
@@ -159,13 +145,10 @@ $conn->close();
                         <input type="text" class="form-control form-control-sm" name="search" id="searchInput" autocomplete="off"
                             placeholder="Search documents..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
                         <span class="input-group-text bg-white">
-                            <i class="fa-solid fa-search text-muted search-icon"></i>
-                            <div class="spinner-border spinner-border-sm text-primary d-none search-spinner" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
+                            <i class="fa-solid fa-search text-muted"></i>
                         </span>
                     </div>
-                    <div id="searchSuggestions" class="position-absolute w-100 mt-1 shadow-sm rounded-3 d-none bg-white border" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                    <div id="searchSuggestions" class="position-absolute w-100 mt-1 shadow-sm d-none" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
                     </div>
                 </div>
             </form>
@@ -175,148 +158,38 @@ $conn->close();
         .nav-tabs .nav-link {
             color: var(--text);
             border: 1px solid transparent;
-            transition: all 0.3s ease;
-            position: relative;
-            font-weight: 500;
         }
 
         .nav-tabs .nav-link:hover {
             border-color: var(--brand);
             color: var(--brand);
             isolation: isolate;
-            transform: translateY(-1px);
         }
 
         .nav-tabs .nav-link.active {
             color: #fff;
             background-color: var(--brand);
             border-color: var(--brand);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-tabs .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40%;
-            height: 2px;
-            background-color: #fff;
         }
 
         #searchSuggestions {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
         }
 
         #searchSuggestions .suggestion {
             cursor: pointer;
-            transition: all 0.2s ease;
-            padding: 8px 12px;
-            border-left: 3px solid transparent;
+            transition: background-color 0.2s;
         }
 
         #searchSuggestions .suggestion:hover {
             background-color: #f8f9fa;
-            border-left-color: var(--brand);
-            padding-left: 15px;
-        }
-
-        #searchInput {
-            transition: all 0.3s ease;
         }
 
         #searchInput:focus {
-            box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.25);
+            box-shadow: none;
             border-color: var(--brand);
-        }
-
-        .card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .card:hover {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .table th {
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-
-        .badge {
-            font-weight: 500;
-            padding: 0.5em 0.8em;
-            border-radius: 6px;
-        }
-
-        .btn-primary {
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-content {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-spinner {
-            width: 1rem;
-            height: 1rem;
-            border-width: 0.15em;
-        }
-
-        .measure-title {
-            color: var(--brand);
-            font-weight: 500;
-            text-decoration: none;
-        }
-
-        .measure-title:hover {
-            text-decoration: underline;
-        }
-
-        .pagination {
-            margin-bottom: 1rem;
-        }
-
-        .pagination .page-link {
-            color: var(--text);
-            border: 1px solid #dee2e6;
-            transition: all 0.3s ease;
-            padding: 0.375rem 0.75rem;
-        }
-
-        .pagination .page-link:hover {
-            background-color: var(--brand);
-            color: #fff;
-            border-color: var(--brand);
-            transform: translateY(-1px);
-        }
-
-        .pagination .page-item.active .page-link {
-            background-color: var(--brand);
-            border-color: var(--brand);
-            color: #fff;
-            font-weight: 500;
-        }
-
-        .pagination .page-item.disabled .page-link {
-            color: #6c757d;
-            pointer-events: none;
-            background-color: #fff;
-            border-color: #dee2e6;
         }
     </style>
     <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
@@ -365,7 +238,7 @@ $conn->close();
                                     <tr>
                                         <td><?= htmlspecialchars($doc['docket_no']) ?></td>
                                         <td>
-                                            <a href="#" class="measure-title" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
                                                 <?= htmlspecialchars($doc['measure_title']) ?>
                                             </a>
                                         </td>
@@ -379,7 +252,7 @@ $conn->close();
                     </table>
                 </div>
             </div>
-            <?php echo generatePaginationLinks($transitPage, $totalPages[0], 'incoming'); ?>
+            <?php echo generatePaginationLinks($transitPage, $totalPages[0], 'transit'); ?>
         </div>
 
         <!-- Under Review Tab -->
@@ -544,21 +417,17 @@ $conn->close();
     const searchInput = document.getElementById('searchInput');
     document.addEventListener('DOMContentLoaded', function() {
         const searchSuggestions = document.getElementById('searchSuggestions');
-        const searchSpinner = document.querySelector('.search-spinner');
-        const searchIcon = document.querySelector('.search-icon');
         let allTableData = [];
 
-        // Collect all searchable data from tables with metadata
+        // Collect all searchable data from tables
         document.querySelectorAll('table tbody tr').forEach(row => {
             if (!row.querySelector('td[colspan]')) {
-                const cells = Array.from(row.cells);
+                const text = Array.from(row.cells)
+                    .map(cell => cell.textContent.trim())
+                    .join(' ');
                 allTableData.push({
-                    text: cells.map(cell => cell.textContent.trim()).join(' ').toLowerCase(),
-                    title: cells[1]?.textContent.trim() || '',
-                    type: cells[2]?.textContent.trim() || '',
-                    status: cells[0]?.textContent.trim() || '',
-                    date: cells[cells.length - 2]?.textContent.trim() || '',
-                    element: row
+                    text: text.toLowerCase(),
+                    original: text
                 });
             }
         });
@@ -573,40 +442,20 @@ $conn->close();
                 clearTimeout(searchTimeout);
             }
 
-            // Show loading state
-            if (searchTerm.length > 0) {
-                searchIcon.classList.add('d-none');
-                searchSpinner.classList.remove('d-none');
-            }
-
             // Set a new timeout
             searchTimeout = setTimeout(() => {
                 if (searchTerm.length > 0) {
                     // Find suggestions
                     const suggestions = allTableData
-                        .filter(item => {
-                            const titleMatch = item.title.toLowerCase().includes(searchTerm);
-                            const typeMatch = item.type.toLowerCase().includes(searchTerm);
-                            const statusMatch = item.status.toLowerCase().includes(searchTerm);
-                            return titleMatch || typeMatch || statusMatch;
-                        })
+                        .filter(item => item.text.includes(searchTerm))
+                        .map(item => item.original)
                         .slice(0, 5); // Limit to 5 suggestions
 
                     // Show suggestions
                     if (suggestions.length > 0) {
                         searchSuggestions.innerHTML = suggestions
-                            .map(suggestion => `
-                                <div class="suggestion border-bottom">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong class="text-primary">${suggestion.title}</strong>
-                                        <small class="text-muted">${suggestion.type}</small>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">${suggestion.status}</small>
-                                        <small class="text-muted">${suggestion.date}</small>
-                                    </div>
-                                </div>
-                            `).join('');
+                            .map(suggestion => `<div class="suggestion p-2 border-bottom hover-bg-light cursor-pointer">${suggestion}</div>`)
+                            .join('');
                         searchSuggestions.classList.remove('d-none');
                     } else {
                         searchSuggestions.classList.add('d-none');
@@ -621,11 +470,6 @@ $conn->close();
                         row.style.display = '';
                     });
                 }
-
-                // Hide loading state
-                searchIcon.classList.remove('d-none');
-                searchSpinner.classList.add('d-none');
-
             }, 300); // 300ms delay
         });
 

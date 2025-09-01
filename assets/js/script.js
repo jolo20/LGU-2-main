@@ -122,7 +122,7 @@ groups.forEach((g, idx) => {
         // if logout URL is on same server and is a POST endpoint, consider calling via fetch first
         window.location.href = pendingLogoutUrl;
       } else {
-        window.location.href = '/login.php';
+        window.location.href = 'LGU-2-MAIN/login.php';
       }
     }, 180);
   });
