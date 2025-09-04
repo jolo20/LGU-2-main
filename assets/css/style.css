@@ -169,7 +169,6 @@ body{
     transform:translateX(-100%); 
     transition:transform .28s ease;
   }
-  body.mobile-open .sidebar{transform:translateX(0)}
   body.mobile-open .wrapper{transform:translateX(var(--sidebar-w))}
 }
 

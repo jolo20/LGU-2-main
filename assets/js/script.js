@@ -103,7 +103,7 @@ groups.forEach((g, idx) => {
       const href = link.getAttribute('href');
       if (dataHref && dataHref.trim() && dataHref.trim() !== '#') pendingLogoutUrl = dataHref.trim();
       else if (href && href.trim() && href.trim() !== '#') pendingLogoutUrl = href.trim();
-      else pendingLogoutUrl = 'login.html'; // fallback
+      else pendingLogoutUrl = 'LGU-2-MAIN/login.php'; // fallback
 
       // if you want to show a message that includes the user name, you can set it here
 

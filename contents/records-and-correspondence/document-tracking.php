@@ -2,537 +2,376 @@
 require_once '../../auth.php';
 $pageTitle = "Document Tracking";
 require_once '../../includes/header.php';
+require_once '../../connection.php';
+require_once 'DocumentTracker.php';
 
-require_once 'connection.php';
+// Initialize the Document Tracker
+$tracker = new DocumentTracker($conn);
 
-// Get active tab from URL or default to 'incoming'
-$activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'incoming';
+// Initialize search term
+$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Pagination setup
-$transitPage = isset($_GET['transitPage']) ? (int)$_GET['transitPage'] : 1;
-$reviewPage = isset($_GET['reviewPage']) ? (int)$_GET['reviewPage'] : 1;
-$processedPage = isset($_GET['processedPage']) ? (int)$_GET['processedPage'] : 1;
-$itemsPerPage = 5;
+// Get active tab from URL or default to 'under_review'
+$activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'under_review';
 
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+// Base query
+$baseQuery = "SELECT * FROM m6_measuredocketing_fromresearch";
 $whereClause = '';
-if ($search !== '') {
-    $search = $conn->real_escape_string($search);
-    $whereClause = "WHERE md.measure_title LIKE '%$search%' 
-                    OR md.docket_no LIKE '%$search%'
-                    OR md.measure_type LIKE '%$search%'
-                    OR md.category LIKE '%$search%'
-                    OR md.introducers LIKE '%$search%'";
+$params = [];
+$types = '';
+
+if (!empty($searchTerm)) {
+    $whereClause = " WHERE measure_title LIKE ? OR measure_content LIKE ? OR docket_no LIKE ?";
+    $searchParam = "%$searchTerm%";
+    $params = [$searchParam, $searchParam, $searchParam];
+    $types = 'sss';
 }
 
-// Clean up URL parameters for pagination links
-$params = $_GET;
-unset($params['transitPage'], $params['reviewPage'], $params['processedPage']);
+$query = $baseQuery . $whereClause;
+$stmt = $conn->prepare($query);
 
-$query = "SELECT md.m6_MD_ID, md.measure_title, md.measure_content,
-               md.date_created, md.measure_type, md.measure_status,
-               md.checking_remarks, md.checking_notes, md.checked_by,
-               md.datetime_submitted, md.introducers, md.docket_no, 
-               md.category, md.subject, md.MFL_Name, md.MFL_Feedback
-    FROM m6_measuredocketing_fromresearch md 
-    $whereClause
-    ORDER BY md.date_created DESC";
-
-$result = $conn->query($query);
-$allRows = [];
-$noResults = false;
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $allRows[] = $row;
-    }
-    if (empty($allRows) && !empty($search)) {
-        $noResults = true;
-    }
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
 }
 
-// Split results into three columns based on status/phase and apply pagination
-$cols = [[], [], []];
-$totalItems = [0, 0, 0];
-$pages = [1, 1, 1];
+$stmt->execute();
+$result = $stmt->get_result();
 
-foreach ($allRows as $row) {
-    if ($row['measure_status'] === 'incoming' || empty($row['measure_status'])) {
-        // Incoming tasks
-        $totalItems[0]++;
-        if (($totalItems[0] > ($transitPage - 1) * $itemsPerPage) &&
-            ($totalItems[0] <= $transitPage * $itemsPerPage)
-        ) {
-            $cols[0][] = $row;
-        }
-    } elseif (empty($row['docket_no'])) {
-        // Under Review - no docket number
-        $totalItems[1]++;
-        if (($totalItems[1] > ($reviewPage - 1) * $itemsPerPage) &&
-            ($totalItems[1] <= $reviewPage * $itemsPerPage)
-        ) {
-            $cols[1][] = $row;
-        }
-    } else {
-        // Processed - has docket number
-        $totalItems[2]++;
-        if (($totalItems[2] > ($processedPage - 1) * $itemsPerPage) &&
-            ($totalItems[2] <= $processedPage * $itemsPerPage)
-        ) {
-            $cols[2][] = $row;
-        }
-    }
+$documents = [];
+while ($row = $result->fetch_assoc()) {
+    // Analyze each document using the AI tracker
+    $analysis = $tracker->analyzeDocument($row);
+    $row['ai_analysis'] = $analysis;
+    $documents[] = $row;
 }
 
-// Calculate total pages for each column
-$totalPages = [
-    ceil($totalItems[0] / $itemsPerPage),
-    ceil($totalItems[1] / $itemsPerPage),
-    ceil($totalItems[2] / $itemsPerPage)
+// Group documents by status
+$groupedDocs = [
+    'under_review' => [],
+    'accomplished' => [],
+    'enacted' => []
 ];
 
-// Function to generate pagination links
-function generatePaginationLinks($currentPage, $totalPages, $tabName)
-{
-    global $activeTab, $search;
-    if ($totalPages <= 1) return '';
-
-    $links = '<nav aria-label="Page navigation" class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">';
-
-    // Build base URL with search parameter if exists
-    $baseUrl = '?tab=' . $activeTab;
-    if (!empty($search)) {
-        $baseUrl .= '&search=' . urlencode($search);
-    }
-
-    // Previous button
-    $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
-    $links .= sprintf(
-        '<li class="page-item %s"><a class="page-link" href="%s&%sPage=%d" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>',
-        $prevDisabled,
-        $baseUrl,
-        $tabName,
-        $currentPage - 1
-    );
-
-    // Page numbers
-    for ($i = 1; $i <= $totalPages; $i++) {
-        $active = $i === $currentPage ? 'active' : '';
-        $links .= sprintf(
-            '<li class="page-item %s"><a class="page-link" href="%s&%sPage=%d">%d</a></li>',
-            $active,
-            $baseUrl,
-            $tabName,
-            $i,
-            $i
-        );
-    }
-
-    // Next button
-    $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
-    $links .= sprintf(
-        '<li class="page-item %s"><a class="page-link" href="%s&%sPage=%d" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>',
-        $nextDisabled,
-        $baseUrl,
-        $tabName,
-        $currentPage + 1
-    );
-
-    $links .= '</ul></nav>';
-    return $links;
+foreach ($documents as $doc) {
+    $status = $doc['ai_analysis']['status'];
+    $groupedDocs[$status][] = $doc;
 }
 
-// Close the connection after getting data
-$conn->close();
+function getStatusBadgeClass($status, $confidence)
+{
+    switch ($status) {
+        case 'under_review':
+            return $confidence > 0.7 ? 'bg-warning' : 'bg-warning text-dark';
+        case 'accomplished':
+            return $confidence > 0.7 ? 'bg-success' : 'bg-success text-dark';
+        case 'enacted':
+            return $confidence > 0.7 ? 'bg-primary' : 'bg-primary text-dark';
+        default:
+            return 'bg-secondary';
+    }
+}
+
 ?>
 
-<div class="cardish">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Document Tracking</h2>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6 mb-3 ms-auto">
-            <form class="d-flex justify-content-end" method="GET" id="searchForm">
-                <input type="hidden" name="tab" value="<?= htmlspecialchars($activeTab) ?>">
-                <div class="position-relative" style="max-width: 300px; width: 100%;">
-                    <div class="input-group">
-                        <input type="text" class="form-control form-control-sm" name="search" id="searchInput" autocomplete="off"
-                            placeholder="Search documents..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
-                        <span class="input-group-text bg-white">
-                            <i class="fa-solid fa-search text-muted search-icon"></i>
-                            <div class="spinner-border spinner-border-sm text-primary d-none search-spinner" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                        </span>
-                    </div>
-                    <div id="searchSuggestions" class="position-absolute w-100 mt-1 shadow-sm rounded-3 d-none bg-white border" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-                    </div>
+<div class="container-fluid mt-4">
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>Document Tracking</h2>
+        </div>
+        <div class="col-md-6">
+            <form method="GET" class="d-flex justify-content-end" action="document-tracking.php">
+                <div class="input-group" style="max-width: 300px;">
+                    <input type="text" class="form-control" name="search"
+                        placeholder="Search documents..."
+                        value="<?= htmlspecialchars($searchTerm) ?>">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
-    <style>
-        .nav-tabs .nav-link {
-            color: var(--text);
-            border: 1px solid transparent;
-            transition: all 0.3s ease;
-            position: relative;
-            font-weight: 500;
-        }
 
-        .nav-tabs .nav-link:hover {
-            border-color: var(--brand);
-            color: var(--brand);
-            isolation: isolate;
-            transform: translateY(-1px);
-        }
-
-        .nav-tabs .nav-link.active {
-            color: #fff;
-            background-color: var(--brand);
-            border-color: var(--brand);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-tabs .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40%;
-            height: 2px;
-            background-color: #fff;
-        }
-
-        #searchSuggestions {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        #searchSuggestions .suggestion {
-            cursor: pointer;
-            transition: all 0.2s ease;
-            padding: 8px 12px;
-            border-left: 3px solid transparent;
-        }
-
-        #searchSuggestions .suggestion:hover {
-            background-color: #f8f9fa;
-            border-left-color: var(--brand);
-            padding-left: 15px;
-        }
-
-        #searchInput {
-            transition: all 0.3s ease;
-        }
-
-        #searchInput:focus {
-            box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.25);
-            border-color: var(--brand);
-        }
-
-        .card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .card:hover {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .table th {
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-
-        .badge {
-            font-weight: 500;
-            padding: 0.5em 0.8em;
-            border-radius: 6px;
-        }
-
-        .btn-primary {
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-content {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-spinner {
-            width: 1rem;
-            height: 1rem;
-            border-width: 0.15em;
-        }
-
-        .measure-title {
-            color: var(--brand);
-            font-weight: 500;
-            text-decoration: none;
-        }
-
-        .measure-title:hover {
-            text-decoration: underline;
-        }
-
-        .pagination {
-            margin-bottom: 1rem;
-        }
-
-        .pagination .page-link {
-            color: var(--text);
-            border: 1px solid #dee2e6;
-            transition: all 0.3s ease;
-            padding: 0.375rem 0.75rem;
-        }
-
-        .pagination .page-link:hover {
-            background-color: var(--brand);
-            color: #fff;
-            border-color: var(--brand);
-            transform: translateY(-1px);
-        }
-
-        .pagination .page-item.active .page-link {
-            background-color: var(--brand);
-            border-color: var(--brand);
-            color: #fff;
-            font-weight: 500;
-        }
-
-        .pagination .page-item.disabled .page-link {
-            color: #6c757d;
-            pointer-events: none;
-            background-color: #fff;
-            border-color: #dee2e6;
-        }
-    </style>
-    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a class="nav-link <?= $activeTab === 'incoming' ? 'active' : '' ?>" id="incoming-tab"
-                href="?tab=incoming" role="tab" aria-controls="incoming" aria-selected="<?= $activeTab === 'incoming' ? 'true' : 'false' ?>">Incoming Tasks</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link <?= $activeTab === 'review' ? 'active' : '' ?>" id="review-tab"
-                href="?tab=review" role="tab" aria-controls="review" aria-selected="<?= $activeTab === 'review' ? 'true' : 'false' ?>">Under Review</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link <?= $activeTab === 'processed' ? 'active' : '' ?>" id="processed-tab"
-                href="?tab=processed" role="tab" aria-controls="processed" aria-selected="<?= $activeTab === 'processed' ? 'true' : 'false' ?>">Processed</a>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="myTabContent">
-        <!-- Incoming Tasks Tab -->
-        <div class="tab-pane fade <?= $activeTab === 'incoming' ? 'show active' : '' ?>" id="incoming" role="tabpanel" aria-labelledby="incoming-tab">
-            <div class="card mb-3">
-                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
-                    Incoming Tasks
-                    <span class="badge bg-light text-dark"><?= count($cols[0]) ?></span>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-sm table-bordered mb-0">
-                        <thead class="text-white" style="background:var(--brand)">
-                            <tr>
-                                <th>Docket No.</th>
-                                <th>Title</th>
-                                <th>Type</th>
-                                <th>Introducers</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($cols[0])): ?>
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-3">
-                                        <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
-                                    </td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($cols[0] as $doc): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($doc['docket_no']) ?></td>
-                                        <td>
-                                            <a href="#" class="measure-title" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
-                                                <?= htmlspecialchars($doc['measure_title']) ?>
-                                            </a>
-                                        </td>
-                                        <td><?= htmlspecialchars($doc['measure_type']) ?></td>
-                                        <td><?= htmlspecialchars($doc['introducers']) ?></td>
-                                        <td><?= htmlspecialchars(date('F j, Y', strtotime($doc['date_sent']))) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+    <?php if (!empty($searchTerm)): ?>
+        <!-- Combined Search Results -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Search Results for: "<?= htmlspecialchars($searchTerm) ?>"</h5>
             </div>
-            <?php echo generatePaginationLinks($transitPage, $totalPages[0], 'incoming'); ?>
-        </div>
+            <div class="card-body">
+                <?php foreach ($groupedDocs as $status => $docs): ?>
+                    <?php if (!empty($docs)): ?>
+                        <h5 class="border-bottom pb-2 mb-3 text-capitalize">
+                            <strong><?= str_replace('_', ' ', $status) ?> Documents</strong>
+                        </h5>
+                        <div class="table-responsive mb-4">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Type</th>
+                                        <th>Progress</th>
+                                        <th>Next Action</th>
+                                        <th>Est. Completion</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($docs as $doc): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($doc['measure_title']) ?></td>
+                                            <td><?= htmlspecialchars($doc['measure_type']) ?></td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar" role="progressbar"
+                                                        style="width: <?= $doc['ai_analysis']['progress'] ?>%"
+                                                        aria-valuenow="<?= $doc['ai_analysis']['progress'] ?>"
+                                                        aria-valuemin="0" aria-valuemax="100">
+                                                        <?= number_format($doc['ai_analysis']['progress']) ?>%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <?php if (!empty($doc['ai_analysis']['next_actions'])): ?>
+                                                    <ul class="list-unstyled mb-0">
+                                                        <?php foreach ($doc['ai_analysis']['next_actions'] as $action): ?>
+                                                            <li><small>• <?= htmlspecialchars($action) ?></small></li>
+                                                        <?php endforeach; ?>
+                                                    </ul>
+                                                <?php else: ?>
+                                                    <span class="text-muted">No pending actions</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?= date('M d, Y', strtotime($doc['ai_analysis']['estimated_completion'])) ?>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                                    data-bs-target="#documentModal<?= $doc['m6_MD_ID'] ?>">
+                                                    View Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
 
-        <!-- Under Review Tab -->
-        <div class="tab-pane fade <?= $activeTab === 'review' ? 'show active' : '' ?>" id="review" role="tabpanel" aria-labelledby="review-tab">
-            <div class="card mb-3">
-                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
-                    Under Review
-                    <span class="badge bg-light text-dark"><?= count($cols[1]) ?></span>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-sm table-bordered mb-0">
-                        <thead class="text-white" style="background:var(--brand)">
-                            <tr>
-                                <th>Status</th>
-                                <th>Title</th>
-                                <th>Type</th>
-                                <th>Introducers</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($cols[1])): ?>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-3">
-                                        <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
-                                    </td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($cols[1] as $doc): ?>
-                                    <tr class="<?= empty($doc['docket_no']) ? 'table-warning' : '' ?>">
-                                        <td>
-                                            <?php if (empty($doc['docket_no'])): ?>
-                                                <span class="badge bg-warning text-dark">Pending Docket</span>
-                                            <?php else: ?>
-                                                <?= htmlspecialchars($doc['docket_no']) ?>
+                <?php if (array_sum(array_map('count', $groupedDocs)) === 0): ?>
+                    <div class="alert alert-info">
+                        No documents found matching your search criteria.
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php else: ?>
+        <!-- Tabbed Interface -->
+        <ul class="nav nav-tabs mb-4" id="myTab">
+            <li class="nav-item">
+                <a class="nav-link <?= $activeTab === 'under_review' ? 'active' : '' ?>"
+                    href="document-tracking.php?tab=under_review" data-tab="under_review">Under Review</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $activeTab === 'accomplished' ? 'active' : '' ?>"
+                    href="document-tracking.php?tab=accomplished" data-tab="accomplished">Accomplished</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?= $activeTab === 'enacted' ? 'active' : '' ?>"
+                    href="document-tracking.php?tab=enacted" data-tab="enacted">Enacted</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <?php foreach ($groupedDocs as $status => $docs): ?>
+                <div class="tab-pane fade <?= $activeTab === $status ? 'show active' : '' ?>"
+                    id="<?= $status ?>">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-capitalize"><?= str_replace('_', ' ', $status) ?> Documents</h5>
+                            <span class="badge bg-primary"><?= count($docs) ?></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <?php if ($activeTab === 'enacted'): ?>
+                                                <th>Sp No.</th>
                                             <?php endif; ?>
-                                        </td>
-                                        <td><?= htmlspecialchars($doc['measure_title']) ?></td>
-                                        <td><?= htmlspecialchars($doc['measure_type']) ?></td>
-                                        <td><?= htmlspecialchars($doc['introducers']) ?></td>
-                                        <td><?= htmlspecialchars(date('F j, Y', strtotime($doc['date_created']))) ?></td>
-                                        <td>
-                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
-                                                Details
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                            <?php if ($activeTab === 'enacted' || $activeTab === 'accomplished'): ?>
+                                                <th>Docket No.</th>
+                                            <?php endif; ?>
+                                            <th>Title</th>
+                                            <th>Type</th>
+                                            <th>Progress</th>
+                                            <th>Next Action</th>
+                                            <th>Est. Completion</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($docs)): ?>
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted py-3">
+                                                    No documents found in this category
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($docs as $doc): ?>
+                                                <tr>
+                                                    <?php if ($activeTab === 'accomplished'): ?>
+                                                        <td>
+                                                            <?= !empty($doc['docket_no']) ? htmlspecialchars($doc['docket_no']) :
+                                                                '<span class="badge bg-warning text-dark">Pending</span>' ?>
+                                                        </td>
+                                                    <?php endif; ?>
+                                                    <td><?= htmlspecialchars($doc['measure_title']) ?></td>
+                                                    <td><?= htmlspecialchars($doc['measure_type']) ?></td>
+                                                    <td>
+                                                        <div class="progress" style="height: 20px;">
+                                                            <div class="progress-bar" role="progressbar"
+                                                                style="width: <?= $doc['ai_analysis']['progress'] ?>%"
+                                                                aria-valuenow="<?= $doc['ai_analysis']['progress'] ?>"
+                                                                aria-valuemin="0" aria-valuemax="100">
+                                                                <?= number_format($doc['ai_analysis']['progress']) ?>%
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if (!empty($doc['ai_analysis']['next_actions'])): ?>
+                                                            <ul class="list-unstyled mb-0">
+                                                                <?php foreach ($doc['ai_analysis']['next_actions'] as $action): ?>
+                                                                    <li><small>• <?= htmlspecialchars($action) ?></small></li>
+                                                                <?php endforeach; ?>
+                                                            </ul>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">No pending actions</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?= date('M d, Y', strtotime($doc['ai_analysis']['estimated_completion'])) ?>
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                                            data-bs-target="#documentModal<?= $doc['m6_MD_ID'] ?>">
+                                                            View Details
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <?php echo generatePaginationLinks($reviewPage, $totalPages[1], 'review'); ?>
+            <?php endforeach; ?>
         </div>
+    <?php endif; ?>
 
-        <!-- Processed Tab -->
-        <div class="tab-pane fade <?= $activeTab === 'processed' ? 'show active' : '' ?>" id="processed" role="tabpanel" aria-labelledby="processed-tab">
-            <div class="card mb-3">
-                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:var(--brand)">
-                    Processed
-                    <span class="badge bg-light text-dark"><?= count($cols[2]) ?></span>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-sm table-bordered mb-0">
-                        <thead class="text-white" style="background:var(--brand)">
-                            <tr>
-                                <th>Docket No.</th>
-                                <th>Title</th>
-                                <th>Type</th>
-                                <th>MFL Name</th>
-                                <th>MFL Feedback</th>
-                                <th>Introducers</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($cols[2])): ?>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-3">
-                                        <?= !empty($search) ? 'No matching documents found for "' . htmlspecialchars($search) . '"' : 'No documents available' ?>
-                                    </td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($cols[2] as $doc): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($doc['docket_no']) ?></td>
-                                        <td><?= htmlspecialchars($doc['measure_title']) ?></td>
-                                        <td><?= htmlspecialchars($doc['measure_type']) ?></td>
-                                        <td><?= htmlspecialchars((string)$doc['MFL_Name']) ?: '<span class="badge bg-warning text-dark">Pending</span>' ?></td>
-                                        <td><?= htmlspecialchars((string)$doc['MFL_Feedback']) ?: '<span class="badge bg-secondary">No Feedback</span>' ?></td>
-                                        <td><?= htmlspecialchars($doc['introducers']) ?></td>
-                                        <td><?= htmlspecialchars(date('F j, Y', strtotime($doc['date_created']))) ?></td>
-                                        <td>
-                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#docModal<?= $doc['m6_MD_ID'] ?>">
-                                                Details
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <?php echo generatePaginationLinks($processedPage, $totalPages[2], 'processed'); ?>
-        </div>
-    </div>
-
-    <!-- Detail modals -->
-    <?php foreach ($allRows as $doc): ?>
-        <div class="modal fade" id="docModal<?= $doc['m6_MD_ID'] ?>" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-xl">
+    <!-- Document Modals -->
+    <?php foreach ($documents as $doc): ?>
+        <div class="modal fade" id="documentModal<?= $doc['m6_MD_ID'] ?>" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Document Details</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <h6 class="border-bottom pb-2">Document Information</h6>
-                                <p><strong>Docket No:</strong>
-                                    <?php if (!empty($doc['docket_no'])): ?>
-                                        <?= htmlspecialchars($doc['docket_no']) ?>
-                                    <?php else: ?>
-                                        <span class="badge bg-warning text-dark">Pending Assignment</span>
-                                    <?php endif; ?>
-                                </p>
-                                <p><strong>Title:</strong> <?= htmlspecialchars($doc['measure_title']) ?></p>
-                                <p><strong>Content:</strong>
+                        <!-- AI Analysis Section -->
+                        <div class="card mb-3 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">AI Analysis</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Status:</strong>
+                                            <span class="badge <?= getStatusBadgeClass($doc['ai_analysis']['status'], $doc['ai_analysis']['confidence']) ?>">
+                                                <?= ucwords(str_replace('_', ' ', $doc['ai_analysis']['status'])) ?>
+                                            </span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Progress:</strong>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar"
+                                                style="width: <?= $doc['ai_analysis']['progress'] ?>%"
+                                                aria-valuenow="<?= $doc['ai_analysis']['progress'] ?>"
+                                                aria-valuemin="0" aria-valuemax="100">
+                                                <?= number_format($doc['ai_analysis']['progress']) ?>%
+                                            </div>
+                                        </div>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
 
-                                <p style="text-align: center;"><?= nl2br(htmlspecialchars($doc["measure_content"], ENT_QUOTES, 'UTF-8')) ?></p>
-                                </p>
-                                <p><strong>Type:</strong> <?= htmlspecialchars($doc['measure_type']) ?></p>
-                                <?php if (strcasecmp($doc['measure_type'], 'Ordinance') === 0 && empty($doc['category'])): ?>
-                                    <p><strong>Category:</strong> Not Specified</p>
-                                <?php elseif (!empty($doc['category'])): ?>
-                                    <p><strong>Category:</strong> <?= htmlspecialchars($doc['category']) ?></p>
-                                <?php elseif (strcasecmp($doc['measure_type'], 'Resolution') === 0 && empty($doc['subject'])): ?>
-                                    <p><strong>Category:</strong> Not Specified</p>
-                                <?php elseif (!empty($doc['subject'])): ?>
-                                    <p><strong>Category:</strong> <?= htmlspecialchars($doc['subject']) ?></p>
+                                        <p class="mb-2">
+                                            <strong>Est. Completion:</strong>
+                                            <?= date('M d, Y', strtotime($doc['ai_analysis']['estimated_completion'])) ?>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <?php if (!empty($doc['ai_analysis']['next_actions'])): ?>
+                                    <div class="mt-3">
+                                        <strong>Recommended Actions:</strong>
+                                        <ul class="list-group list-group-flush mt-2">
+                                            <?php foreach ($doc['ai_analysis']['next_actions'] as $action): ?>
+                                                <li class="list-group-item bg-transparent">
+                                                    <i class="fas fa-check-circle text-primary me-2"></i>
+                                                    <?= htmlspecialchars($action) ?>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
                                 <?php endif; ?>
-                                <p><strong>Recently Checked By:</strong> <?= htmlspecialchars($doc['checked_by']) ?></p>
-                                <p><strong>Status:</strong> <?= ucfirst(htmlspecialchars($doc['measure_status'])) ?></p>
-                                <p><strong>MFL Name:</strong> <?= ucfirst(htmlspecialchars((string)$doc['MFL_Name'])) ?: 'Pending' ?></p>
-                                <p><strong>MFL Feedback:</strong> <?= ucfirst(htmlspecialchars((string)$doc['MFL_Feedback'])) ?: 'No Feedback' ?></p>
-                                <p><strong>Created:</strong> <?= date("m/d/Y", strtotime($doc["date_created"])) ?></p>
                             </div>
                         </div>
+
+                        <!-- Document Details Section -->
+                        <h6>Document Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Title:</strong> <?= htmlspecialchars($doc['measure_title']) ?></p>
+                                <p><strong>Type:</strong> <?= htmlspecialchars($doc['measure_type']) ?></p>
+                                <p><strong>Docket No:</strong>
+                                    <?= !empty($doc['docket_no']) ? htmlspecialchars($doc['docket_no']) :
+                                        '<span class="badge bg-warning text-dark">Pending</span>' ?>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Date Created:</strong>
+                                    <?= date('M d, Y', strtotime($doc['date_created'])) ?>
+                                </p>
+                                <p><strong>Status:</strong></break>
+                                    <?= ucwords($doc['measure_status']) ?>
+                                <div class="text-muted small">
+                                    <?= date('M d, Y', strtotime($doc['date_created'])) ?>
+                                </div>
+                                </p>
+                                <p><strong>Checked By:</strong>
+                                    <?= !empty($doc['checked_by']) ? htmlspecialchars($doc['checked_by']) :
+                                        '<span class="badge bg-secondary">Not yet reviewed</span>' ?>
+                                </p>
+                            </div>
+                        </div>
+
+                        <h6 class="mt-3">Content</h6>
+                        <div class="border p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                            <?= nl2br(htmlspecialchars($doc['measure_content'])) ?>
+                        </div>
+
+                        <?php if (!empty($doc['checking_remarks'])): ?>
+                            <h6 class="mt-3">Remarks</h6>
+                            <p><?= nl2br(htmlspecialchars($doc['checking_remarks'])) ?></p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -541,259 +380,56 @@ $conn->close();
 </div>
 
 <script>
-    const searchInput = document.getElementById('searchInput');
     document.addEventListener('DOMContentLoaded', function() {
-        const searchSuggestions = document.getElementById('searchSuggestions');
-        const searchSpinner = document.querySelector('.search-spinner');
-        const searchIcon = document.querySelector('.search-icon');
-        let allTableData = [];
-
-        // Collect all searchable data from tables with metadata
-        document.querySelectorAll('table tbody tr').forEach(row => {
-            if (!row.querySelector('td[colspan]')) {
-                const cells = Array.from(row.cells);
-                allTableData.push({
-                    text: cells.map(cell => cell.textContent.trim()).join(' ').toLowerCase(),
-                    title: cells[1]?.textContent.trim() || '',
-                    type: cells[2]?.textContent.trim() || '',
-                    status: cells[0]?.textContent.trim() || '',
-                    date: cells[cells.length - 2]?.textContent.trim() || '',
-                    element: row
-                });
-            }
-        });
-
-        // Handle search input with debounce
-        let searchTimeout = null;
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.trim().toLowerCase();
-
-            // Clear the previous timeout
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-
-            // Show loading state
-            if (searchTerm.length > 0) {
-                searchIcon.classList.add('d-none');
-                searchSpinner.classList.remove('d-none');
-            }
-
-            // Set a new timeout
-            searchTimeout = setTimeout(() => {
-                if (searchTerm.length > 0) {
-                    // Find suggestions
-                    const suggestions = allTableData
-                        .filter(item => {
-                            const titleMatch = item.title.toLowerCase().includes(searchTerm);
-                            const typeMatch = item.type.toLowerCase().includes(searchTerm);
-                            const statusMatch = item.status.toLowerCase().includes(searchTerm);
-                            return titleMatch || typeMatch || statusMatch;
-                        })
-                        .slice(0, 5); // Limit to 5 suggestions
-
-                    // Show suggestions
-                    if (suggestions.length > 0) {
-                        searchSuggestions.innerHTML = suggestions
-                            .map(suggestion => `
-                                <div class="suggestion border-bottom">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong class="text-primary">${suggestion.title}</strong>
-                                        <small class="text-muted">${suggestion.type}</small>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">${suggestion.status}</small>
-                                        <small class="text-muted">${suggestion.date}</small>
-                                    </div>
-                                </div>
-                            `).join('');
-                        searchSuggestions.classList.remove('d-none');
-                    } else {
-                        searchSuggestions.classList.add('d-none');
-                    }
-
-                    // Perform search
-                    performSearch(searchTerm);
-                } else {
-                    searchSuggestions.classList.add('d-none');
-                    // Show all rows when search is empty
-                    document.querySelectorAll('table tbody tr').forEach(row => {
-                        row.style.display = '';
-                    });
-                }
-
-                // Hide loading state
-                searchIcon.classList.remove('d-none');
-                searchSpinner.classList.add('d-none');
-
-            }, 300); // 300ms delay
-        });
-
-        // Handle suggestion clicks
-        searchSuggestions.addEventListener('click', function(e) {
-            const suggestion = e.target.closest('.suggestion');
-            if (suggestion) {
-                searchInput.value = suggestion.textContent;
-                searchSuggestions.classList.add('d-none');
-                performSearch(suggestion.textContent.toLowerCase());
-            }
-        });
-
-        // Close suggestions when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('#searchInput') && !e.target.closest('#searchSuggestions')) {
-                searchSuggestions.classList.add('d-none');
-            }
-        });
-
-        // Remove focus from search button after click
-        document.querySelector('#searchForm button[type="submit"]').addEventListener('mouseup', function() {
-            this.blur();
-        });
-
-        // Update pagination links when there's a search query
-        function updatePaginationLinks() {
-            const searchQuery = document.getElementById('searchInput').value.trim();
-            const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-
-            document.querySelectorAll('.pagination .page-link').forEach(link => {
-                const url = new URL(link.href);
-                if (searchQuery) {
-                    url.searchParams.set('search', searchQuery);
-                }
-                url.searchParams.set('tab', currentTab);
-                link.href = url.toString();
-            });
-        }
-
-        // Handle search form submission
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const searchInput = document.getElementById('searchInput');
-            const searchTerm = searchInput.value.trim();
-
-            if (searchTerm === '') {
-                return;
-            }
-
-            // Get current active tab
-            const activeTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-
-            // Build the URL with current tab and search term
-            const url = new URL(window.location.href);
-            url.searchParams.set('tab', activeTab);
-            url.searchParams.set('search', searchTerm);
-
-            // Redirect to the search URL
-            window.location.href = url.toString();
-
-            // If using client-side search, prevent form submission and perform search
-            if (window.location.href.includes('search=')) {
+        // Single unified tab handling
+        document.querySelectorAll('#myTab .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
                 e.preventDefault();
-                performSearch(searchTerm);
-            }
-        });
+                const tab = this.getAttribute('data-tab');
+                const searchParam = new URLSearchParams(window.location.search).get('search') || '';
 
-        // Handle tab changes
-        const tabLinks = document.querySelectorAll('[data-bs-toggle="tab"]');
-        tabLinks.forEach(tabLink => {
-            tabLink.addEventListener('shown.bs.tab', function(e) {
-                const tabId = e.target.id.replace('-tab', '');
-                // Update URL with new tab
-                const url = new URL(window.location.href);
-                url.searchParams.set('tab', tabId);
-                window.history.pushState({}, '', url.toString());
+                // Construct URL with tab and search parameters
+                let url = new URL('document-tracking.php', window.location.origin + window.location.pathname.replace('document-tracking.php', ''));
+                url.searchParams.set('tab', tab);
+                if (searchParam) {
+                    url.searchParams.set('search', searchParam);
+                }
 
-                // Save active tab to localStorage as backup
-                localStorage.setItem('activeDocumentTab', tabId);
+                // Update active states immediately
+                document.querySelectorAll('#myTab .nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => {
+                    p.classList.remove('show', 'active');
+                });
 
-                // Update all pagination links with new tab
-                updatePaginationLinks();
+                this.classList.add('active');
+                const tabPane = document.getElementById(tab);
+                if (tabPane) {
+                    tabPane.classList.add('show', 'active');
+                }
+
+                // Update URL
+                window.location.href = url.toString();
             });
         });
 
-        // Set active tab on page load based on localStorage
-        const savedTab = localStorage.getItem('activeDocumentTab');
-        if (savedTab) {
-            const tabToActivate = document.querySelector(`#${savedTab}-tab`);
-            if (tabToActivate) {
-                const tab = new bootstrap.Tab(tabToActivate);
-                tab.show();
-            }
-        }
+        // Fix search form
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    const searchTerm = searchInput.value;
+                    const currentTab = new URLSearchParams(window.location.search).get('tab') || 'under_review';
 
-        // Set initial state
-        const url = new URL(window.location.href);
-        const currentTab = document.querySelector('.nav-link.active').id.replace('-tab', '');
-        if (!url.searchParams.has('tab')) {
-            url.searchParams.set('tab', currentTab);
-            window.history.replaceState({}, '', url.toString());
-        }
-
-        // Update pagination links on page load
-        updatePaginationLinks();
-
-        const searchInput = document.getElementById('searchInput');
-        const tables = document.querySelectorAll('table');
-        const allRows = Array.from(document.querySelectorAll('table tbody tr')).filter(row => !row.querySelector('td[colspan]'));
-        const originalRows = [...allRows];
-
-        function performSearch(searchTerm) {
-            searchTerm = searchTerm.toLowerCase();
-            let hasAnyResults = false;
-
-            originalRows.forEach(row => {
-                const text = Array.from(row.cells)
-                    .map(cell => cell.textContent.toLowerCase())
-                    .join(' ');
-
-                if (text.includes(searchTerm)) {
-                    row.style.display = '';
-                    hasAnyResults = true;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Update empty state for each table
-            tables.forEach(table => {
-                const tbody = table.querySelector('tbody');
-                const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none' && !row.classList.contains('no-results'));
-
-                // Remove existing no results row if it exists
-                const existingNoResults = tbody.querySelector('tr.no-results');
-                if (existingNoResults) {
-                    existingNoResults.remove();
-                }
-
-                // Get the number of columns for this table
-                const colCount = table.querySelector('thead tr').children.length;
-
-                // Add no results row if needed
-                if (visibleRows.length === 0) {
-                    const noResultsRow = document.createElement('tr');
-                    noResultsRow.className = 'no-results';
-                    const cell = document.createElement('td');
-                    cell.colSpan = colCount;
-                    cell.className = 'text-center text-muted py-3';
-                    cell.innerHTML = searchTerm ? 'No matching documents found for "' + searchTerm + '"' : 'No documents available';
-                    noResultsRow.appendChild(cell);
-                    tbody.appendChild(noResultsRow);
+                    const url = new URL('document-tracking.php', window.location.origin + window.location.pathname.replace('document-tracking.php', ''));
+                    url.searchParams.set('tab', currentTab);
+                    url.searchParams.set('search', searchTerm);
+                    window.location.href = url.toString();
                 }
             });
         }
-
-        // Handle real-time search
-        searchInput.addEventListener('input', function() {
-            performSearch(this.value);
-        });
-
-        // Handle form submission
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
-            if (searchInput.value.trim() === '') {
-                e.preventDefault(); // Prevent empty submissions
-            }
-        });
     });
 </script>
-<?php require_once '../../includes/footer.php' ?>
+
+<?php require_once '../../includes/footer.php'; ?>
