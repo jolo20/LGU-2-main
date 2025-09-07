@@ -18,24 +18,24 @@ class DocumentTracker
         // Status pattern recognition based on document content and metadata
         $this->statusPatterns = [
             'under_review' => [
-                'keywords' => ['pending', 'for review', 'submitted', 'draft', 'initial'],
-                'conditions' => [
-                    'no_docket' => true,
-                    'recent_submission' => true
+                'keywords' => ['draft'],
+                'descriptions' => [
+                    'draft' => 'Initial document draft',
                 ]
             ],
             'accomplished' => [
-                'keywords' => ['approved', 'processed', 'completed', 'docketed'],
-                'conditions' => [
-                    'has_docket' => true,
-                    'has_feedback' => true
+                'keywords' => ['pending', '1st reading', '2nd reading', '3rd reading'],
+                'descriptions' => [
+                    'pending' => 'Awaiting review',
+                    '1st reading' => 'First reading in progress',
+                    '2nd reading' => 'Second reading in progress',
+                    '3rd reading' => 'Final reading completed'
                 ]
             ],
             'enacted' => [
-                'keywords' => ['enacted', 'approved', 'signed', 'implemented'],
-                'conditions' => [
-                    'has_sp_number' => true,
-                    'fully_processed' => true
+                'keywords' => ['enacted'],
+                'descriptions' => [
+                    'enacted' => 'Document has been enacted'
                 ]
             ]
         ];
@@ -51,7 +51,7 @@ class DocumentTracker
             ],
             'review' => [
                 'next' => ['docketing', 'revision'],
-                'requirements' => ['checking_remarks', 'checked_by']
+                'requirements' => ['checking_remarks']
             ],
             'docketing' => [
                 'next' => ['committee', 'return'],
@@ -75,73 +75,64 @@ class DocumentTracker
         $nextActions = $this->predictNextActions($doc);
         $timeEstimate = $this->estimateCompletionTime($doc);
 
+        // Get assigned departments from the database
+        $stmt = $this->conn->prepare("SELECT assigned_to FROM m6_measures WHERE measure_id = ?");
+        $stmt->bind_param("s", $doc['m6_MD_ID']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $assigned_depts = [];
+
+        if ($row = $result->fetch_assoc()) {
+            if (!empty($row['assigned_to'])) {
+                $assigned_depts = explode(',', $row['assigned_to']);
+            }
+        }
+
         return [
             'status' => $status,
             'progress' => $progress,
             'next_actions' => $nextActions,
             'estimated_completion' => $timeEstimate,
-            'confidence' => $this->calculateConfidence($doc)
+            'assigned_to' => $assigned_depts,
         ];
     }
 
     private function determineStatus($doc)
     {
-        // Determine document status based on patterns and conditions
-        $scores = [];
+        // If measure_status is null or empty, default to 'draft'
+        $status = !empty($doc['measure_status']) ? strtolower($doc['measure_status']) : 'draft';
 
-        foreach ($this->statusPatterns as $status => $pattern) {
-            $score = 0;
+        // Map the measure status to our tracking statuses
+        $statusMap = [
+            'draft' => 'under_review',
+            'pending' => 'accomplished',
+            '1st reading' => 'accomplished',
+            '2nd reading' => 'accomplished',
+            '3rd reading' => 'accomplished',
+            'enacted' => 'enacted'
+        ];
 
-            // Check keywords in content
-            foreach ($pattern['keywords'] as $keyword) {
-                if (stripos($doc['measure_content'] . ' ' . $doc['measure_title'], $keyword) !== false) {
-                    $score += 1;
-                }
-            }
-
-            // Check conditions
-            foreach ($pattern['conditions'] as $condition => $required) {
-                switch ($condition) {
-                    case 'no_docket':
-                        if ($required === empty($doc['docket_no'])) $score += 2;
-                        break;
-                    case 'has_docket':
-                        if ($required === !empty($doc['docket_no'])) $score += 2;
-                        break;
-                    case 'has_sp_number':
-                        if ($required === !empty($doc['sp_no'])) $score += 3;
-                        break;
-                    case 'has_feedback':
-                        if ($required === !empty($doc['MFL_Feedback'])) $score += 2;
-                        break;
-                    case 'recent_submission':
-                        $submission_date = strtotime($doc['date_created']);
-                        $is_recent = (time() - $submission_date) < (30 * 24 * 60 * 60); // 30 days
-                        if ($required === $is_recent) $score += 1;
-                        break;
-                }
-            }
-
-            $scores[$status] = $score;
-        }
-
-        arsort($scores);
-        return array_key_first($scores);
+        // Return the mapped status or 'under_review' as default
+        return isset($statusMap[$status]) ? $statusMap[$status] : 'under_review';
     }
 
     private function calculateProgress($doc)
     {
-        $stages = ['submission', 'review', 'docketing', 'committee', 'enactment'];
-        $currentStage = 0;
-        $totalStages = count($stages);
+        // If measure_status is null or empty, default to 'draft'
+        $status = !empty($doc['measure_status']) ? strtolower($doc['measure_status']) : 'draft';
 
-        if (!empty($doc['sp_no'])) return 100;
-        if (!empty($doc['MFL_Feedback'])) $currentStage = 4;
-        elseif (!empty($doc['docket_no'])) $currentStage = 3;
-        elseif (!empty($doc['checked_by'])) $currentStage = 2;
-        elseif (!empty($doc['measure_content'])) $currentStage = 1;
+        // Define progress percentages for each status
+        $progressMap = [
+            'draft' => 16.67,      // 1/6
+            'pending' => 33.33,    // 2/6
+            '1st reading' => 50,   // 3/6
+            '2nd reading' => 66.67, // 4/6
+            '3rd reading' => 83.33, // 5/6
+            'enacted' => 100       // 6/6
+        ];
 
-        return ($currentStage / $totalStages) * 100;
+        // Return the corresponding progress percentage or 0 if status not found
+        return isset($progressMap[$status]) ? $progressMap[$status] : 16.67; // Default to draft progress
     }
 
     private function predictNextActions($doc)
@@ -151,11 +142,8 @@ class DocumentTracker
 
         switch ($current_status) {
             case 'under_review':
-                if (empty($doc['checking_remarks'])) {
+                if (empty($doc['record_remarks'])) {
                     $actions[] = 'Needs initial review';
-                }
-                if (empty($doc['checked_by'])) {
-                    $actions[] = 'Pending reviewer assignment';
                 }
                 break;
 
@@ -180,22 +168,54 @@ class DocumentTracker
 
     private function estimateCompletionTime($doc)
     {
-        // Calculate average completion time based on historical data
-        $query = "SELECT AVG(TIMESTAMPDIFF(DAY, date_created, date_enacted)) as avg_days 
-                  FROM m6_measuredocketing_fromresearch 
-                  WHERE measure_type = ? AND sp_no IS NOT NULL";
+        // Get current date for comparison
+        $currentDate = new DateTime();
+        $createdDate = new DateTime($doc['date_created']);
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('s', $doc['measure_type']);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $avg = $result->fetch_assoc()['avg_days'];
+        // Set base timeline based on measure type
+        $measureType = strtolower($doc['measure_type']);
+        if ($measureType === 'ordinance') {
+            $baseWeeks = 1; // 1 week base for ordinances (3 readings + hearings)
+            $maxMonths = 3; // Maximum 3 months for ordinances
+        } else {
+            // Resolution or other types
+            $baseWeeks = 2; // 2 weeks base for resolutions
+            $maxMonths = 2; // Maximum 2 months for resolutions
+        }
 
-        // Adjust estimate based on complexity and current progress
-        $progress = $this->calculateProgress($doc);
-        $remaining_days = $avg * (1 - ($progress / 100));
+        // Set initial estimate
+        $initialEstimate = clone $createdDate;
+        $initialEstimate->modify("+{$baseWeeks} weeks");
 
-        return date('Y-m-d', strtotime("+{$remaining_days} days"));
+        // If initial estimate has passed, add weeks based on how many periods have passed
+        if ($currentDate > $initialEstimate) {
+            $interval = $currentDate->diff($initialEstimate);
+            $weeksOverdue = ceil($interval->days / 7);
+
+            // Add extension weeks based on measure type
+            if ($measureType === 'ordinance') {
+                $additionalWeeks = min($weeksOverdue, 2) * 2; // Maximum 4 additional weeks for ordinances
+            } else {
+                $additionalWeeks = min($weeksOverdue, 4) * 1; // Maximum 4 additional weeks for resolutions
+            }
+
+            // Add the additional weeks to current date
+            $newEstimate = clone $currentDate;
+            $newEstimate->modify("+{$additionalWeeks} weeks");
+
+            // Ensure estimate doesn't go beyond max months from now
+            $maxDate = clone $currentDate;
+            $maxDate->modify("+{$maxMonths} months");
+
+            if ($newEstimate > $maxDate) {
+                return $maxDate->format('Y-m-d');
+            }
+
+            return $newEstimate->format('Y-m-d');
+        }
+
+        // If initial estimate hasn't passed yet, use it
+        return $initialEstimate->format('Y-m-d');
     }
 
     private function calculateConfidence($doc)
@@ -209,8 +229,7 @@ class DocumentTracker
             'has_content' => !empty($doc['measure_content']),
             'has_type' => !empty($doc['measure_type']),
             'has_docket' => !empty($doc['docket_no']),
-            'has_feedback' => !empty($doc['MFL_Feedback']),
-            'has_reviewer' => !empty($doc['checked_by'])
+            'has_feedback' => !empty($doc['MFL_Feedback'])
         ];
 
         $weights = [
