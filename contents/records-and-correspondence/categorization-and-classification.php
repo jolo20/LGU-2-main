@@ -14,13 +14,21 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
 // Check for feedback messages
-if (isset($_SESSION['message'])) {
-    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+if (isset($_SESSION['message'])):
+        echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
             ' . htmlspecialchars($_SESSION['message']) . '
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>';
-    unset($_SESSION['message']);
-}
+        </div>';
+        unset($_SESSION['message']); 
+   endif; 
+
+     if (isset($_SESSION['error'])):
+        echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ' . htmlspecialchars($_SESSION['error']) . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>';
+        unset($_SESSION['error']);
+     endif; 
 
 // Initialize search term
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -31,12 +39,12 @@ $filterCategory = isset($_GET['category']) ? $_GET['category'] : '';
 $filterSubject = isset($_GET['subject']) ? $_GET['subject'] : '';
 
 // Base SQL for Ordinances and Resolutions with search condition
-$searchCondition = '';
+$searchCondition = ' WHERE docket_no IS NOT NULL AND docket_no != ""';
 $params = [];
 $types = '';
 
 if (!empty($searchTerm)) {
-    $searchCondition = " WHERE (measure_title LIKE ? OR measure_content LIKE ?)";
+    $searchCondition .= " AND (measure_title LIKE ? OR measure_content LIKE ?)";
     $params[] = "%{$searchTerm}%";
     $params[] = "%{$searchTerm}%";
     $types .= 'ss';
@@ -192,9 +200,10 @@ function classifyDocument($content, $title)
                     </div>
                     <div class="card-body">
                         <?php
-                        // Fetch Ordinances
+                        // Fetch Ordinances with docket numbers
                         $ordinanceStmt = $conn->prepare("SELECT *, 'ordinance' as doc_type FROM m6_measuredocketing_fromresearch 
-                                                   $searchCondition AND measure_type = 'ordinance'");
+                                                   WHERE docket_no IS NOT NULL AND docket_no != '' AND measure_type = 'ordinance'" .
+                            (!empty($searchCondition) ? " AND " . substr($searchCondition, 6) : ""));
                         if (!empty($searchTerm)) {
                             $ordinanceStmt->bind_param('ss', $searchParam, $searchParam);
                         }
@@ -246,40 +255,42 @@ function classifyDocument($content, $title)
                         <?php endif; ?>
 
                         <!-- Display Resolutions -->
-                        <?php if ($resolutionResult->num_rows > 0): ?>
-                            <h6 class="border-bottom pb-2 mb-3">Resolutions</h6>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Docket No.</th>
-                                            <th>Title</th>
-                                            <th>Subject</th>
-                                            <th>Date Created</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php while ($row = $resolutionResult->fetch_assoc()):
-                                            $classification = classifyDocument($row['measure_content'], $row['measure_title']);
-                                        ?>
+                        <?php if (!empty($row['docket_no'])): ?>
+                            <?php if ($resolutionResult->num_rows > 0): ?>
+                                <h6 class="border-bottom pb-2 mb-3">Resolutions</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
                                             <tr>
-                                                <td><?= !empty($row['docket_no']) ? htmlspecialchars($row['docket_no']) :
-                                                        '<span class="badge bg-warning text-dark">Pending</span>' ?></td>
-                                                <td><?= htmlspecialchars($row['measure_title']) ?></td>
-                                                <td><?= ucwords($classification['subject']) ?></td>
-                                                <td><?= date("M d, Y", strtotime($row['date_created'])) ?></td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                                        data-bs-target="#documentModal<?= $row['m6_MD_ID'] ?>">
-                                                        View Details
-                                                    </button>
-                                                </td>
+                                                <th>Docket No.</th>
+                                                <th>Title</th>
+                                                <th>Subject</th>
+                                                <th>Date Created</th>
+                                                <th>Actions</th>
                                             </tr>
-                                        <?php endwhile; ?>
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody>
+                                            <?php while ($row = $resolutionResult->fetch_assoc()):
+                                                $classification = classifyDocument($row['measure_content'], $row['measure_title']);
+                                            ?>
+                                                <tr>
+                                                    <td><?= !empty($row['docket_no']) ? htmlspecialchars($row['docket_no']) :
+                                                            '<span class="badge bg-warning text-dark">Pending</span>' ?></td>
+                                                    <td><?= htmlspecialchars($row['measure_title']) ?></td>
+                                                    <td><?= ucwords($classification['subject']) ?></td>
+                                                    <td><?= date("M d, Y", strtotime($row['date_created'])) ?></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                                            data-bs-target="#documentModal<?= $row['m6_MD_ID'] ?>">
+                                                            View Details
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            <?php endwhile; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
 
                         <?php if ($ordinanceResult->num_rows === 0 && $resolutionResult->num_rows === 0): ?>
@@ -298,10 +309,10 @@ function classifyDocument($content, $title)
                     <div class="card-header">
                         <ul class="nav nav-tabs card-header-tabs" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#ordinances">Ordinances</a>
+                                <a class="nav-link active" data-bs-toggle="tab" href="#ordinances">Proposed Ordinances</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#resolutions">Resolutions</a>
+                                <a class="nav-link" data-bs-toggle="tab" href="#resolutions">Proposed Resolutions</a>
                             </li>
                         </ul>
                     </div>
@@ -322,16 +333,15 @@ function classifyDocument($content, $title)
                                         </thead>
                                         <tbody>
                                             <?php
-                                            // Count total ordinances
-                                            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM m6_measuredocketing_fromresearch WHERE measure_type = 'ordinance'");
+                                            // Count total ordinances with docket numbers
+                                            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM m6_measuredocketing_fromresearch 
+                                                       WHERE measure_type = 'ordinance' AND docket_no IS NOT NULL AND docket_no != ''");
                                             $countStmt->execute();
                                             $totalRow = $countStmt->get_result()->fetch_assoc();
                                             $totalOrdinances = $totalRow['total'];
-                                            $totalPages = ceil($totalOrdinances / $limit);
-
-                                            // Get paginated ordinances
+                                            $totalPages = ceil($totalOrdinances / $limit);                                            // Get paginated ordinances with docket numbers
                                             $stmt = $conn->prepare("SELECT * FROM m6_measuredocketing_fromresearch 
-                                             WHERE measure_type = 'ordinance' 
+                                             WHERE measure_type = 'ordinance' AND docket_no IS NOT NULL AND docket_no != ''
                                              ORDER BY date_created DESC 
                                              LIMIT ? OFFSET ?");
                                             $stmt->bind_param('ii', $limit, $offset);
@@ -427,16 +437,15 @@ function classifyDocument($content, $title)
                                         </thead>
                                         <tbody>
                                             <?php
-                                            // Count total resolutions
-                                            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM m6_measuredocketing_fromresearch WHERE measure_type = 'resolution'");
+                                            // Count total resolutions with docket numbers
+                                            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM m6_measuredocketing_fromresearch 
+                                                       WHERE measure_type = 'resolution' AND docket_no IS NOT NULL AND docket_no != ''");
                                             $countStmt->execute();
                                             $totalRow = $countStmt->get_result()->fetch_assoc();
                                             $totalResolutions = $totalRow['total'];
-                                            $totalPages = ceil($totalResolutions / $limit);
-
-                                            // Get paginated resolutions
+                                            $totalPages = ceil($totalResolutions / $limit);                                            // Get paginated resolutions with docket numbers
                                             $stmt = $conn->prepare("SELECT * FROM m6_measuredocketing_fromresearch 
-                                                             WHERE measure_type = 'resolution' 
+                                                             WHERE measure_type = 'resolution' AND docket_no IS NOT NULL AND docket_no != ''
                                                              ORDER BY date_created DESC 
                                                              LIMIT ? OFFSET ?");
                                             $stmt->bind_param('ii', $limit, $offset);
